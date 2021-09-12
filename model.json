@@ -1,0 +1,27 @@
+{
+    "Data": {
+        "@attr": {
+            "mtype": "container"
+        },
+        "Name": {
+            "@attr": {
+                "mtype": "leaf",
+                "dtype": "string"
+            }
+        },
+        "Volume": {
+            "@attr": {
+                "mtype": "leaf",
+                "dtype": "int"
+            }
+        }
+    },
+    "Action": [
+        {
+            "Reset": {
+                "Input": null,
+                "Output": null
+            }
+        }
+    ]
+}

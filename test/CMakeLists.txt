@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 
-project (model)
+project (mdm)
 
 # set default build type if not specified by user
 if(NOT CMAKE_BUILD_TYPE)
@@ -11,21 +11,12 @@ set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_C_FLAGS_DEBUG   "-g -O0 -DDEBUG")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include 
-/usr/local/include
-)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(mdm_srcs ${CMAKE_CURRENT_SOURCE_DIR}/src/model.c) 
 
-link_directories(${mdm_BINARY_DIR} 
-/usr/local/lib
-)
+add_library(libmdm SHARED ${mdm_srcs})
 
-add_library(mdm SHARED ${mdm_srcs})
-target_link_libraries(mdm cjson)
+add_executable(mdm main.c)
 
-add_executable(model main.c)
-
-target_link_libraries(model mdm cjson)
-
-
+target_link_libraries(mdm libmdm)
