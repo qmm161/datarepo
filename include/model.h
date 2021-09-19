@@ -51,6 +51,8 @@ struct mds_mo
 struct mds_leaf
 {
     char *name;
+    mds_mtype mtype;
+    
     struct mds_node *parent;
     struct mds_node *child;
     struct mds_node *prev;
