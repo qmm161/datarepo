@@ -3,7 +3,10 @@
 #include <string.h>
 #include <stdio.h>
 #include "model.h"
+#include "macro.h"
 #include "cjson/cJSON.h"
+
+static struct mds_node *build_mds_node(cJSON *json_node);
 
 #define is_mo(mtype) ((mtype)==MDS_MT_CONTAINER || (mtype)==MDS_MT_LIST)
 #define is_leaf(mtype) ((mtype)==MDS_MT_LEAF)
@@ -91,7 +94,7 @@ static struct mds_node * build_self_node(cJSON *json_node)
 
 static struct mds_node *build_child_node(struct mds_node * parent , cJSON *json_node)
 {
-    struct mds_node *node = build_self_node(json_node);
+    struct mds_node *node = build_mds_node(json_node);
     if(!node) {
         return NULL;
     }
@@ -103,7 +106,7 @@ static struct mds_node *build_child_node(struct mds_node * parent , cJSON *json_
 
 static struct mds_node *build_next_node(struct mds_node *sib , cJSON *json_node)
 {
-    struct mds_node *node = build_self_node(json_node);
+    struct mds_node *node = build_mds_node(json_node);
     if(!node) {
         return NULL;
     }
@@ -116,9 +119,7 @@ static struct mds_node *build_next_node(struct mds_node *sib , cJSON *json_node)
 
 static cJSON *find_child_schema(cJSON *node)
 {
-    if(!node) {
-        return NULL;
-    }
+    CHECK_RTN_VAL(!node, NULL);
 
     cJSON *target = node->child;
     while(target) {
@@ -133,9 +134,7 @@ static cJSON *find_child_schema(cJSON *node)
 
 static cJSON *find_next_schema(cJSON *node)
 {
-    if(!node) {
-        return NULL;
-    }
+    CHECK_RTN_VAL(!node, NULL);
 
     cJSON *target = node->next;
     while(target) {
@@ -151,33 +150,25 @@ static cJSON *find_next_schema(cJSON *node)
 static struct mds_node *build_mds_node(cJSON *json_node) 
 {
     struct mds_node *node = build_self_node(json_node);
-    if(is_mo(node->mtype)) {
-        printf("parse %s is mo\n", node->name);
-        cJSON *json_child = find_child_schema(json_node);
-        cJSON *last_json_child = json_child;
-        struct mds_node *parent = node;
-        while(json_child) {
-            struct mds_node *child = build_child_node(parent, json_child);
-            if (!child) {
-                goto ERR_OUT;
-            }
-            parent = child;
-            last_json_child = json_child;
-            json_child = find_child_schema(json_child);
-        }
+    struct mds_node *child = NULL;
+    struct mds_node *next = NULL;
 
-        cJSON *json_next = find_next_schema(last_json_child);
-        cJSON *last_json_next = json_next;
-        struct mds_node *left_sib = parent;
-        while(json_next) {
-            struct mds_node *next = build_next_node(left_sib, json_next);
-            if(!next) {
-                goto ERR_OUT;
-            }
-            left_sib = next;
-            last_json_next = json_next;
-            json_next = find_next_schema(json_next);
-        }
+    cJSON *json_child = NULL;
+    cJSON *json_next = NULL;
+
+    CHECK_GOTO(!node, ERR_OUT);
+    printf("parse %s as %d\n", node->name, node->mtype);
+
+    json_child = find_child_schema(json_node);
+    if (json_child) {
+        child = build_child_node(node, json_child);
+        CHECK_GOTO(!child, ERR_OUT);
+    } 
+
+    json_next = find_next_schema(json_node);
+    if (json_next) {
+        next = build_next_node(node, json_next);
+        CHECK_GOTO(!next, ERR_OUT);
     }
 
     return node;
@@ -203,15 +194,26 @@ struct mds_node *mdm_load_model(const char *model_str)
     return model_data;
 }
 
-// static mdm_free_node(struct mds_node *node)
-// {
-//     if(node) {}
-// }
+static void mdm_free_self_node(struct mds_node *node)
+{
+    if(node) {
+        free(node->name);
+        free(node);
+    }
+}
 
 void mdm_free_model(struct mds_node *root)
 {
     struct mds_node *child = root->child;
-    // while(child) {
+    struct mds_node *next = root->next;
 
-    // }
+    if(child) {
+        mdm_free_model(child);
+    }
+
+    if(next) {
+        mdm_free_model(next);
+    }
+
+    mdm_free_self_node(root);
 }
