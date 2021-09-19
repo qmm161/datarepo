@@ -1,6 +1,10 @@
 #ifndef _MODEL_H_
 #define _MODEL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum
 {
     MDS_MT_NULL,
@@ -57,5 +61,9 @@ struct mds_leaf
 
 struct mds_node *mdm_load_model(const char *model_str);
 void mdm_free_model(struct mds_node *root);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

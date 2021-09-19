@@ -1,22 +1,33 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.0)
 
-project (mdm)
+file (GLOB_RECURSE test_srcs *.cpp)
 
-# set default build type if not specified by user
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE debug)
-endif()
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
+
+message("link dir-> " ${CMAKE_CURRENT_SOURCE_DIR})
+
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../build
+/usr/local/lib
+)
+
+#link_directories(/usr/local/lib)
 
 set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_C_FLAGS_DEBUG   "-g -O0 -DDEBUG")
+set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall -Wextra -fPIC -std=c++11")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG   "-g -O0 -DDEBUG")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(TEST_DEP_LIB mdm pthread gtest gmock gmock_main)
 
-set(mdm_srcs ${CMAKE_CURRENT_SOURCE_DIR}/src/model.c) 
-
-add_library(libmdm SHARED ${mdm_srcs})
-
-add_executable(mdm main.c)
-
-target_link_libraries(mdm libmdm)
+foreach(test_src IN LISTS test_srcs)
+    string(REGEX REPLACE "(.*/)?(.*)\\.cpp$" "\\2" test_name ${test_src})
+    string(FIND ${test_name} "test_" test_pos)
+    if(${test_pos} EQUAL 0)
+        list(APPEND tests ${test_name})
+        add_executable(${test_name} ${test_src})
+        target_link_libraries(${test_name} ${TEST_DEP_LIB})
+        add_test(NAME ${test_name} COMMAND $<TARGET_FILE:${test_name}> WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    endif()
+endforeach(test_src)

@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.0)
 
 project (model)
 
@@ -15,17 +15,23 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 /usr/local/include
 )
 
-set(mdm_srcs ${CMAKE_CURRENT_SOURCE_DIR}/src/model.c) 
-
 link_directories(${mdm_BINARY_DIR} 
 /usr/local/lib
 )
 
+set(mdm_srcs ${CMAKE_CURRENT_SOURCE_DIR}/src/model.c) 
 add_library(mdm SHARED ${mdm_srcs})
 target_link_libraries(mdm cjson)
+install(TARGETS mdm LIBRARY DESTINATION lib)
 
 add_executable(model main.c)
-
 target_link_libraries(model mdm cjson)
+
+option(ENABLE_BUILD_TEST "Build tests" ON)
+
+if(ENABLE_BUILD_TEST)
+    enable_testing()
+    add_subdirectory(./test tests)
+endif()
 
 

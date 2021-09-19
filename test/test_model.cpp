@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "model.h"
 
+using namespace std;
 using namespace testing;
 
 class ModelTest : public Test
