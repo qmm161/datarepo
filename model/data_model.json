@@ -15,13 +15,5 @@
                 "dtype": "int"
             }
         }
-    },
-    "Action": [
-        {
-            "Reset": {
-                "Input": null,
-                "Output": null
-            }
-        }
-    ]
+    }
 }

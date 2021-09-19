@@ -4,7 +4,7 @@
 
 int main()
 {
-    FILE * fd = fopen("./model.json", "r" );
+    FILE * fd = fopen("../model/data_model.json", "r" );
     char *buf = calloc(1, 1024*1024*2);
     fread(buf, sizeof(char), 1024*1024*2, fd);
     fclose(fd);
