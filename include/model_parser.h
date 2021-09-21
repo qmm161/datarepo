@@ -20,12 +20,6 @@ typedef enum
     MDS_DT_STR
 } mds_dtype;
 
-typedef union
-{
-    long long intv;
-    char *strv;
-} mds_dvalue;
-
 struct mds_node
 {
     char *name;

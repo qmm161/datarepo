@@ -2,6 +2,7 @@
     "files.associations": {
         "cjson.h": "c",
         "cstdlib": "c",
-        "__node_handle": "c"
+        "__node_handle": "c",
+        "data_parser.h": "c"
     }
 }
