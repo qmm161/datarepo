@@ -46,10 +46,26 @@ public:
 
     void TearDown()
     {
+        mdm_free_data(data);
+        data = NULL;
+
         mdm_free_model(schema);
         schema = NULL;
+    }
 
-        mdm_free_data(data);
+    void assert_mo(const char *name, struct mdd_node *node)
+    {
+        ASSERT_EQ(MDS_MT_CONTAINER, node->schema->mtype);
+        ASSERT_STREQ(name, node->schema->name);
+    }
+
+    void assert_string_leaf(const char *name, const char *value, struct mdd_node *node)
+    {
+        ASSERT_EQ(MDS_MT_LEAF, node->schema->mtype);
+        ASSERT_STREQ(name, node->schema->name);
+
+        struct mdd_leaf *leaf = (struct mdd_leaf*)node;
+        ASSERT_STREQ(value, leaf->value.strv);
     }
 
     struct mds_node *schema;
@@ -64,4 +80,6 @@ TEST_F(DataParser, test_should_build_single_mo)
         }
     })";
     data = mdm_parse_data(schema, TEST_DATA_JSON);
+    assert_mo("Data", data);
+    assert_string_leaf("Name", "vc1000", data->child);
 }

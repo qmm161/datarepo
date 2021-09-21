@@ -8,8 +8,6 @@
 
 static struct mds_node *build_mds_node(cJSON *json_node);
 
-#define is_mo(mtype) ((mtype)==MDS_MT_CONTAINER || (mtype)==MDS_MT_LIST)
-#define is_leaf(mtype) ((mtype)==MDS_MT_LEAF)
 
 static cJSON *locate_child(cJSON *root, const char *name)
 {
@@ -71,7 +69,7 @@ static struct mds_node * build_self_node(cJSON *json_node)
 
     mds_mtype mtype = get_mtype(json_node);
     if(mtype == MDS_MT_NULL) {
-        printf("invalid mtype\n");
+        printf("mds--invalid mtype\n");
         return NULL;
     }
 
@@ -79,13 +77,13 @@ static struct mds_node * build_self_node(cJSON *json_node)
         node = (struct mds_node*)calloc(1, sizeof(struct mds_mo));
         node->name = strdup(json_node->string);
         node->mtype = mtype;
-        printf("build self mo-> name:%s, mtype:%d\n", node->name, node->mtype);
+        printf("mds--build self mo-> name:%s, mtype:%d\n", node->name, node->mtype);
     } else {
         struct mds_leaf *leaf = (struct mds_leaf*)calloc(1, sizeof(struct mds_leaf));
         leaf->name = strdup(json_node->string);
         leaf->mtype = mtype;
         leaf->dtype = get_dtype(json_node);
-        printf("build self leaf-> name:%s, mtype:%d, dtype=%d\n", leaf->name, leaf->mtype, leaf->dtype);
+        printf("mds--build self leaf-> name:%s, mtype:%d, dtype=%d\n", leaf->name, leaf->mtype, leaf->dtype);
         node = (struct mds_node*)leaf;
     }
     
@@ -95,9 +93,7 @@ static struct mds_node * build_self_node(cJSON *json_node)
 static struct mds_node *build_child_node(struct mds_node * parent , cJSON *json_node)
 {
     struct mds_node *node = build_mds_node(json_node);
-    if(!node) {
-        return NULL;
-    }
+    CHECK_RTN_VAL(!node, NULL);
 
     parent->child = node;
     node->parent = parent;
@@ -107,9 +103,7 @@ static struct mds_node *build_child_node(struct mds_node * parent , cJSON *json_
 static struct mds_node *build_next_node(struct mds_node *sib , cJSON *json_node)
 {
     struct mds_node *node = build_mds_node(json_node);
-    if(!node) {
-        return NULL;
-    }
+    CHECK_RTN_VAL(!node, NULL);
 
     sib->next = node;
     node->prev = sib;
@@ -124,7 +118,7 @@ static cJSON *find_child_schema(cJSON *node)
     cJSON *target = node->child;
     while(target) {
         if(strcmp(target->string, "@attr")) {
-            printf("find child schema: %s for %s\n", target->string, node->string);
+            printf("mds--find child schema: %s for %s\n", target->string, node->string);
             return target;
         }
         target = target->next;
@@ -139,7 +133,7 @@ static cJSON *find_next_schema(cJSON *node)
     cJSON *target = node->next;
     while(target) {
         if(strcmp(target->string, "@attr")) {
-            printf("find next schema: %s for %s\n", target->string, node->string);
+            printf("mds--find next schema: %s for %s\n", target->string, node->string);
             return target;
         }
         target = target->next;
@@ -157,7 +151,7 @@ static struct mds_node *build_mds_node(cJSON *json_node)
     cJSON *json_next = NULL;
 
     CHECK_GOTO(!node, ERR_OUT);
-    printf("parse %s as %d\n", node->name, node->mtype);
+    printf("mds--parse %s as %d\n", node->name, node->mtype);
 
     json_child = find_child_schema(json_node);
     if (json_child) {
@@ -182,9 +176,7 @@ struct mds_node *mdm_load_model(const char *model_str)
 {
     struct mds_node *model_data = NULL;
     cJSON *root = cJSON_Parse(model_str);
-    if (!root) {
-        return NULL;
-    }
+    CHECK_RTN_VAL(!root, NULL);
 
     cJSON *data = locate_child(root, "Data");
 
@@ -216,4 +208,41 @@ void mdm_free_model(struct mds_node *root)
     }
 
     mdm_free_self_node(root);
+}
+
+struct mds_node *mdm_find_child_schema(struct mds_node*curr, const char *name)
+{
+    CHECK_RTN_VAL(!curr || !name, NULL);
+
+    struct mds_node* child = curr->child;
+    while (child)
+    {
+        if(!strcmp(child->name, name)) {
+            return child;
+        }
+        child = child->next;
+    }
+    return NULL;
+}
+
+struct mds_node *mdm_find_next_schema(struct mds_node*curr, const char *name)
+{
+    CHECK_RTN_VAL(!curr || !name, NULL);
+
+    struct mds_node* next = curr->next;
+    if(next) {
+        if(!strcmp(next->name, name)) {
+            return next;
+        }
+        next = next->next;
+    } 
+
+    struct mds_node *prev = curr->prev;
+    if(prev) {
+        if(!strcmp(prev->name, name)) {
+            return prev;
+        }
+        prev = prev->prev;
+    }
+    return NULL; 
 }

@@ -6,15 +6,162 @@
 #include "macro.h"
 #include "cjson/cJSON.h"
 
-struct mdd_node *mdm_parse_data(struct mds_node *schema, const char *data_json)
-{
-    (void)schema;
-    (void)data_json;
+static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json);
 
-    return NULL;
+static void mdm_free_self_node(struct mdd_node *node)
+{
+    CHECK_RTN(!node);
+
+    if (is_leaf(node->schema->mtype)) {
+        struct mdd_leaf *leaf = (struct mdd_leaf*)node;
+        if(((struct mds_leaf*)leaf->schema)->dtype == MDS_DT_STR) {
+            free(leaf->value.strv);
+        }
+    }
+    free(node);
 }
 
 void mdm_free_data(struct mdd_node *root)
 {
-    (void)root;
+    CHECK_RTN(!root);
+    
+    struct mdd_node *child = root->child;
+    struct mdd_node *next = root->next;
+
+    if(child) {
+        mdm_free_data(child);
+    }
+
+    if(next) {
+        mdm_free_data(next);
+    }
+
+    mdm_free_self_node(root);
+}
+
+static struct mdd_node *build_self_node(struct mds_node *schema, cJSON *data_json)
+{
+    struct mdd_node *data = NULL;
+    CHECK_DO_RTN_VAL(strcmp(schema->name, data_json->string), 
+        printf("mdd--schema not match %s-%s\n", schema->name, data_json->string), NULL);
+
+    if (is_mo(schema->mtype)) {
+        CHECK_DO_RTN_VAL(!cJSON_IsObject(data_json), printf("mdd--data is not mo\n"), NULL);
+
+        struct mdd_mo *mo = (struct mdd_mo*) calloc(1, sizeof(struct mdd_mo*));
+        mo->schema = schema;
+        data = (struct mdd_node*) mo;
+    } else {
+        struct mds_leaf *leaf_schema = (struct mds_leaf*)schema;
+        struct mdd_leaf *leaf = (struct mdd_leaf*) calloc(1, sizeof(struct mdd_leaf*));
+        leaf->schema = schema;
+        if(leaf_schema->dtype == MDS_DT_STR) {
+            CHECK_DO_RTN_VAL(!cJSON_IsString(data_json), printf("mdd--data is not string\n");free(leaf), NULL);
+            leaf->value.strv = strdup(data_json->valuestring);
+        } else {
+            CHECK_DO_RTN_VAL(!cJSON_IsNumber(data_json), printf("mdd--data is not number\n");free(leaf), NULL);
+            leaf->value.intv = data_json->valueint;
+        }
+        data = (struct mdd_node*)leaf;
+    }
+
+    return data;
+}
+
+static void find_child_data(struct mds_node *parent_schema, cJSON *parent_json, 
+    struct mds_node **child_schema, cJSON **child_json)
+{
+    CHECK_RTN(!parent_json->child);
+
+    *child_json = parent_json->child;
+    const char *name = (*child_json)->string;
+
+    *child_schema = mdm_find_child_schema(parent_schema, name);
+    if (!(*child_schema)) {
+        printf("mdd--invalid data node name:%s\n", name);
+        *child_json = NULL;
+    }
+}
+
+static void find_next_data(struct mds_node *curr_schema, cJSON *curr_json, 
+    struct mds_node **next_schema, cJSON **next_json)
+{
+    CHECK_RTN(!curr_json->next);
+
+    *next_json = curr_json->next;
+    const char *name = (*next_json)->string;
+
+    *next_schema = mdm_find_next_schema(curr_schema, name);
+    if (!(*next_schema)) {
+        printf("mdd--invalid data node name:%s\n", name);
+        *next_json = NULL;
+    }
+}
+
+static struct mdd_node *build_child_data(struct mdd_node *curr, struct mds_node *schema, cJSON *data_json)
+{
+    struct mdd_node *node = build_mdd_node(schema, data_json);
+    CHECK_RTN_VAL(!node, NULL);
+
+    curr->child = node;
+    node->parent = curr;
+    return node;
+}
+
+static struct mdd_node *build_next_data(struct mdd_node *curr, struct mds_node *schema, cJSON *data_json)
+{
+    struct mdd_node *node = build_mdd_node(schema, data_json);
+    CHECK_RTN_VAL(!node, NULL);
+
+    curr->next = node;
+    node->prev = curr;
+    node->parent = curr->parent;
+    return node;
+}
+
+static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json)
+{
+    struct mdd_node *node = build_self_node(schema, data_json);
+    struct mdd_node *child = NULL;
+    struct mdd_node *next = NULL;
+
+    cJSON *json_child = NULL;
+    cJSON *json_next = NULL;
+
+    struct mds_node *schema_child = NULL;
+    struct mds_node *schema_next = NULL;
+
+    CHECK_GOTO(!node, ERR_OUT);
+    printf("mdd--parse data %s as %d\n", node->schema->name, node->schema->mtype);
+
+    find_child_data(schema, data_json, &schema_child, &json_child);
+    if (json_child && schema_child) {
+        child = build_child_data(node, schema_child, json_child);
+        CHECK_GOTO(!child, ERR_OUT);
+    } 
+
+    find_next_data(schema, data_json, &schema_next, &json_next);
+    if (json_next && schema_next) {
+        next = build_next_data(node, schema_next, json_next);
+        CHECK_GOTO(!next, ERR_OUT);
+    }
+
+    printf("mdd--parse node succ:%s\n", node->schema->name);
+    return node;
+
+    ERR_OUT:
+    mdm_free_data(node);
+    return NULL;
+}
+
+struct mdd_node *mdm_parse_data(struct mds_node *schema, const char *data_json)
+{
+    struct mdd_node *data_root = NULL;
+    cJSON *json_root = cJSON_Parse(data_json);
+    CHECK_RTN_VAL(!json_root || !json_root->child, NULL);
+
+    data_root = build_mdd_node(schema, json_root->child);
+    
+    cJSON_Delete(json_root);
+    return data_root;
 }
