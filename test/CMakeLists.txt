@@ -4,8 +4,6 @@ file (GLOB_RECURSE test_srcs *.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
-message("link dir-> " ${CMAKE_CURRENT_SOURCE_DIR})
-
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../build
 /usr/local/lib
 )

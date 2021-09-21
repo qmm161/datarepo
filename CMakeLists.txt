@@ -19,7 +19,8 @@ link_directories(${mdm_BINARY_DIR}
 /usr/local/lib
 )
 
-set(mdm_srcs ${CMAKE_CURRENT_SOURCE_DIR}/src/model.c) 
+set(mdm_srcs ${CMAKE_CURRENT_SOURCE_DIR}/src/model_parser.c) 
+
 add_library(mdm SHARED ${mdm_srcs})
 target_link_libraries(mdm cjson)
 install(TARGETS mdm LIBRARY DESTINATION lib)

@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "model.h"
+#include "model_parser.h"
 
 using namespace std;
 using namespace testing;

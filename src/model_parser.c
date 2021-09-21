@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "model.h"
+#include "model_parser.h"
 #include "macro.h"
 #include "cjson/cJSON.h"
 
