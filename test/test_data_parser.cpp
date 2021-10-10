@@ -187,7 +187,6 @@ TEST_F(DataParser, test_should_build_multi_layer_mo_disorder)
     assert_string_leaf("Name", "vc1000", data->child->next->next);
 }
 
-#if 0
 TEST_F(DataParser, test_should_build_list)
 {
     const char *TEST_DATA_JSON = R"({
@@ -205,4 +204,3 @@ TEST_F(DataParser, test_should_build_list)
     assert_list("ChildList", data->child->next);
     assert_list("ChildList", data->child->next->next);
 }
-#endif
