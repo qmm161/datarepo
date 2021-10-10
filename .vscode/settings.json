@@ -5,6 +5,8 @@
         "__node_handle": "c",
         "data_parser.h": "c",
         "macro.h": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "data_repo.h": "c",
+        "log.h": "c"
     }
 }

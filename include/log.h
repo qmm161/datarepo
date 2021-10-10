@@ -1,6 +1,8 @@
 #ifndef _LOG_H_
 #define _LOG_H_
 
+#include <stdio.h>
+
 #define LOG_LEVEL_ERR   1
 #define LOG_LEVEL_WARN  2
 #define LOG_LEVEL_INFO  3

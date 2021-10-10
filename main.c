@@ -1,18 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "include/model_parser.h"
+#include "include/data_repo.h"
+#include "log.h"
 
 int main()
 {
-    FILE * fd = fopen("../model/data_model.json", "r" );
-    char *buf = calloc(1, 1024*1024*2);
-    fread(buf, sizeof(char), 1024*1024*2, fd);
-    fclose(fd);
+    int rlt = repo_init("../model/data_model.json", "../model/data.json");
 
-    struct mds_node * model = mdm_load_model(buf);
-    mdm_free_model(model);
+    repo_free();
 
-    free(buf);
+    LOG_INFO("repo init with rlt: %d", rlt);
 
-    return 0;
+    return rlt;
 }
