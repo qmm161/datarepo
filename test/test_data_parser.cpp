@@ -46,7 +46,7 @@ public:
 
     void TearDown()
     {
-        mdm_free_data(data);
+        mdd_free_data(data);
         data = NULL;
 
         mdm_free_model(schema);
@@ -80,7 +80,7 @@ TEST_F(DataParser, test_should_build_single_mo)
             "Name": "vc1000"
         }
     })";
-    data = mdm_parse_data(schema, TEST_DATA_JSON);
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
     assert_mo("Data", data);
     assert_string_leaf("Name", "vc1000", data->child);
 }

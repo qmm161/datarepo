@@ -8,7 +8,7 @@
 
 static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json);
 
-static void mdm_free_self_node(struct mdd_node *node)
+static void mdd_free_self_node(struct mdd_node *node)
 {
     CHECK_RTN(!node);
 
@@ -21,7 +21,7 @@ static void mdm_free_self_node(struct mdd_node *node)
     free(node);
 }
 
-void mdm_free_data(struct mdd_node *root)
+void mdd_free_data(struct mdd_node *root)
 {
     CHECK_RTN(!root);
 
@@ -29,14 +29,14 @@ void mdm_free_data(struct mdd_node *root)
     struct mdd_node *next = root->next;
 
     if(child) {
-        mdm_free_data(child);
+        mdd_free_data(child);
     }
 
     if(next) {
-        mdm_free_data(next);
+        mdd_free_data(next);
     }
 
-    mdm_free_self_node(root);
+    mdd_free_self_node(root);
 }
 
 static struct mdd_node *build_self_node(struct mds_node *schema, cJSON *data_json)
@@ -175,11 +175,11 @@ static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json
     return node;
 
     ERR_OUT:
-    mdm_free_data(node);
+    mdd_free_data(node);
     return NULL;
 }
 
-struct mdd_node *mdm_parse_data(struct mds_node *schema, const char *data_json)
+struct mdd_node *mdd_parse_data(struct mds_node *schema, const char *data_json)
 {
     struct mdd_node *data_root = NULL;
     cJSON *json_root = cJSON_Parse(data_json);

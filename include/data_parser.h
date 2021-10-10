@@ -45,8 +45,8 @@ struct mdd_leaf
     mdd_dvalue value;
 };
 
-struct mdd_node *mdm_parse_data(struct mds_node *schema, const char *data_json);
-void mdm_free_data(struct mdd_node *root);
+struct mdd_node *mdd_parse_data(struct mds_node *schema, const char *data_json);
+void mdd_free_data(struct mdd_node *root);
 
 
 #ifdef __cplusplus
