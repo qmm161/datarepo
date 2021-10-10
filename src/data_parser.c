@@ -93,7 +93,7 @@ static void find_child_data(struct mds_node *parent_schema, cJSON *parent_json,
 
     *child_schema = mdm_find_child_schema(parent_schema, name);
     if (!(*child_schema)) {
-        printf("mdd--invalid data node name:%s\n", name);
+        printf("mdd--invalid child data node name:%s\n", name);
         *child_json = NULL;
     }
 }
@@ -108,7 +108,7 @@ static void find_next_data(struct mds_node *curr_schema, cJSON *curr_json,
 
     *next_schema = mdm_find_next_schema(curr_schema, name);
     if (!(*next_schema)) {
-        printf("mdd--invalid data node name:%s\n", name);
+        printf("mdd--invalid next data node name:%s\n", name);
         *next_json = NULL;
     }
 }
@@ -167,6 +167,7 @@ static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json
 
     find_next_data(schema, data_json, &schema_next, &json_next);
     if (json_next && schema_next) {
+        printf("mdd--try build next %s by %s\n", schema->name, schema_next->name);
         next = build_next_data(node, schema_next, json_next);
         CHECK_GOTO(!next, ERR_OUT);
     }

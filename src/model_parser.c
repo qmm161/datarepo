@@ -230,7 +230,7 @@ struct mds_node *mdm_find_next_schema(struct mds_node*curr, const char *name)
     CHECK_RTN_VAL(!curr || !name, NULL);
 
     struct mds_node* next = curr->next;
-    if(next) {
+    while(next) {
         if(!strcmp(next->name, name)) {
             return next;
         }
@@ -238,7 +238,7 @@ struct mds_node *mdm_find_next_schema(struct mds_node*curr, const char *name)
     } 
 
     struct mds_node *prev = curr->prev;
-    if(prev) {
+    while(prev) {
         if(!strcmp(prev->name, name)) {
             return prev;
         }
