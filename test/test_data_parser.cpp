@@ -204,3 +204,33 @@ TEST_F(DataParser, test_should_build_list)
     assert_list("ChildList", data->child->next);
     assert_list("ChildList", data->child->next->next);
 }
+
+TEST_F(DataParser, test_should_build_multi_layer_list)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "Name": "vc1000",
+            "ChildList": [
+                {
+                    "Id": 1, 
+                    "SubChildList":[
+                        {"Id": 1, "IntLeaf":100},
+                        {"Id": 2, "IntLeaf":200}
+                    ]
+                },
+                {"Id": 2}
+            ]
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_mo("Data", data);
+    assert_string_leaf("Name", "vc1000", data->child);
+    assert_list("ChildList", data->child->next);
+    assert_int_leaf("Id", 1, data->child->next->child);
+    assert_list("SubChildList", data->child->next->child->next);
+    assert_int_leaf("Id", 1, data->child->next->child->next->child);
+    assert_int_leaf("IntLeaf", 100, data->child->next->child->next->child->next);
+    assert_list("SubChildList", data->child->next->child->next->next);
+    assert_list("ChildList", data->child->next->next);
+    assert_int_leaf("Id", 2, data->child->next->next->child);
+}
