@@ -5,6 +5,7 @@
 #include "data_parser.h"
 #include "macro.h"
 #include "cjson/cJSON.h"
+#include "log.h"
 
 static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json, struct mdd_node *parent);
 
@@ -41,9 +42,9 @@ void mdd_free_data(struct mdd_node *root)
 
 static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *data_json, struct mdd_node *parent)
 {
-    CHECK_DO_RTN_VAL(!cJSON_IsObject(data_json), printf("invalid container data\n"), NULL);
+    CHECK_DO_RTN_VAL(!cJSON_IsObject(data_json), LOG_WARN("invalid container data"), NULL);
 
-    printf("mdd--try build container or list: %s\n", schema->name);
+    LOG_INFO("mdd--try build container or list: %s", schema->name);
     struct mdd_mo *node = (struct mdd_mo*) calloc(1, sizeof(struct mdd_mo));
     node->schema = schema;
     node->parent = parent;
@@ -55,7 +56,7 @@ static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *dat
         struct mds_node *schema_child = mdm_find_child_schema(schema, data_child->string);
         struct mdd_node *node_child = NULL;
         CHECK_DO_GOTO(!schema_child, 
-            printf("invalid child data name %s under %s\n", data_json->string, schema->name),ERR_OUT);
+            LOG_WARN("invalid child data name %s under %s", data_json->string, schema->name),ERR_OUT);
         
         node_child = build_mdd_node(schema_child, data_child, parent);
         if(!prev) {
@@ -77,9 +78,9 @@ static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *dat
 
 static struct mdd_node *build_list_node(struct mds_node *schema, cJSON *data_json, struct mdd_node *parent)
 {
-    CHECK_DO_RTN_VAL(!cJSON_IsArray(data_json), printf("invalid list data\n"), NULL);
+    CHECK_DO_RTN_VAL(!cJSON_IsArray(data_json), LOG_WARN("invalid list data"), NULL);
 
-    printf("mdd--trye build list: %s-%s\n", schema->name, data_json->string);
+    LOG_INFO("mdd--trye build list: %s-%s", schema->name, data_json->string);
     struct mdd_node *first = NULL;
     struct mdd_node *prev = NULL;
     struct mdd_node *node = NULL;
@@ -104,20 +105,20 @@ static struct mdd_node *build_list_node(struct mds_node *schema, cJSON *data_jso
 
 static struct mdd_node *build_leaf_node(struct mds_node *schema, cJSON *data_json, struct mdd_node *parent)
 {
-    printf("mdd--try build leaf: %s-%s\n", schema->name, data_json->string);
+    LOG_INFO("mdd--try build leaf: %s-%s", schema->name, data_json->string);
     struct mds_leaf *leaf_schema = (struct mds_leaf*)schema;
     struct mdd_leaf *leaf = (struct mdd_leaf*) calloc(1, sizeof(struct mdd_leaf));
-    CHECK_DO_RTN_VAL(!leaf, printf("no memory!\n"), NULL);
+    CHECK_DO_RTN_VAL(!leaf, LOG_WARN("no memory!"), NULL);
 
     leaf->schema = schema;
     leaf->parent = parent;
     if(leaf_schema->dtype == MDS_DT_STR) {
-        printf("mdd--try build str leaf: %s-%s\n", schema->name, data_json->valuestring);
-        CHECK_DO_RTN_VAL(!cJSON_IsString(data_json), printf("mdd--data is not string\n");free(leaf), NULL);
+        LOG_DEBUG("mdd--try build str leaf: %s-%s", schema->name, data_json->valuestring);
+        CHECK_DO_RTN_VAL(!cJSON_IsString(data_json), LOG_WARN("mdd--data is not string");free(leaf), NULL);
         leaf->value.strv = strdup(data_json->valuestring);
     } else {
-        printf("mdd--try build int leaf: %s-%lld\n", schema->name, data_json->valueint);
-        CHECK_DO_RTN_VAL(!cJSON_IsNumber(data_json), printf("mdd--data is not number\n");free(leaf), NULL);
+        LOG_DEBUG("mdd--try build int leaf: %s-%d", schema->name, data_json->valueint);
+        CHECK_DO_RTN_VAL(!cJSON_IsNumber(data_json), LOG_WARN("mdd--data is not number");free(leaf), NULL);
         leaf->value.intv = data_json->valueint;
     }
     return leaf;
@@ -137,7 +138,6 @@ static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json
 
     return node;
 }
-
 
 struct mdd_node *mdd_parse_data(struct mds_node *schema, const char *data_json)
 {

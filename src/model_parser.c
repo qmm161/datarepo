@@ -5,9 +5,9 @@
 #include "model_parser.h"
 #include "macro.h"
 #include "cjson/cJSON.h"
+#include "log.h"
 
 static struct mds_node *build_mds_node(cJSON *json_node);
-
 
 static cJSON *locate_child(cJSON *root, const char *name)
 {
@@ -69,7 +69,7 @@ static struct mds_node * build_self_node(cJSON *json_node)
 
     mds_mtype mtype = get_mtype(json_node);
     if(mtype == MDS_MT_NULL) {
-        printf("mds--invalid mtype\n");
+        LOG_WARN("mds--invalid mtype");
         return NULL;
     }
 
@@ -77,13 +77,13 @@ static struct mds_node * build_self_node(cJSON *json_node)
         node = (struct mds_node*)calloc(1, sizeof(struct mds_mo));
         node->name = strdup(json_node->string);
         node->mtype = mtype;
-        printf("mds--build self mo-> name:%s, mtype:%d\n", node->name, node->mtype);
+        LOG_DEBUG("mds--build self mo-> name:%s, mtype:%d", node->name, node->mtype);
     } else {
         struct mds_leaf *leaf = (struct mds_leaf*)calloc(1, sizeof(struct mds_leaf));
         leaf->name = strdup(json_node->string);
         leaf->mtype = mtype;
         leaf->dtype = get_dtype(json_node);
-        printf("mds--build self leaf-> name:%s, mtype:%d, dtype=%d\n", leaf->name, leaf->mtype, leaf->dtype);
+        LOG_DEBUG("mds--build self leaf-> name:%s, mtype:%d, dtype=%d", leaf->name, leaf->mtype, leaf->dtype);
         node = (struct mds_node*)leaf;
     }
     
@@ -118,7 +118,7 @@ static cJSON *find_child_schema(cJSON *node)
     cJSON *target = node->child;
     while(target) {
         if(strcmp(target->string, "@attr")) {
-            printf("mds--find child schema: %s for %s\n", target->string, node->string);
+            LOG_DEBUG("mds--find child schema: %s for %s", target->string, node->string);
             return target;
         }
         target = target->next;
@@ -133,7 +133,7 @@ static cJSON *find_next_schema(cJSON *node)
     cJSON *target = node->next;
     while(target) {
         if(strcmp(target->string, "@attr")) {
-            printf("mds--find next schema: %s for %s\n", target->string, node->string);
+            LOG_DEBUG("mds--find next schema: %s for %s", target->string, node->string);
             return target;
         }
         target = target->next;
@@ -151,7 +151,7 @@ static struct mds_node *build_mds_node(cJSON *json_node)
     cJSON *json_next = NULL;
 
     CHECK_GOTO(!node, ERR_OUT);
-    printf("mds--parse %s as %d\n", node->name, node->mtype);
+    LOG_DEBUG("mds--parse %s as %d", node->name, node->mtype);
 
     json_child = find_child_schema(json_node);
     if (json_child) {
