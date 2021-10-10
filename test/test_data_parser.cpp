@@ -17,7 +17,7 @@ const char *TEST_MODEL_JSON = R"({
         },
         "ChildData": {
             "@attr": {
-                "mtype": "list"
+                "mtype": "container"
             },
             "Id": {
                 "@attr": {
@@ -31,6 +31,34 @@ const char *TEST_MODEL_JSON = R"({
                 "mtype": "leaf",
                 "dtype": "int"
             }
+        },
+        "ChildList":{
+            "@attr": {
+                "mtype": "list"
+            },
+            "Id": {
+                "@attr": {
+                    "mtype": "leaf",
+                    "dtype": "int"
+                }
+            },
+            "SubChildList": {
+                "@attr": {
+                    "mtype": "list"
+                },
+                "Id": {
+                    "@attr": {
+                        "mtype": "leaf",
+                        "dtype": "int"
+                    }
+                },   
+                "IntLeaf": {
+                    "@attr": {
+                        "mtype": "leaf",
+                        "dtype": "int"
+                    }
+                }       
+            }                         
         }
     }
 })";
@@ -79,6 +107,18 @@ public:
         ASSERT_EQ(value, leaf->value.intv);
     }
 
+    void assert_container(const char *name, struct mdd_node *node)
+    {
+        ASSERT_EQ(MDS_MT_CONTAINER, node->schema->mtype);
+        ASSERT_STREQ(name, node->schema->name);        
+    }
+
+    void assert_list(const char *name, struct mdd_node *node)
+    {
+        ASSERT_EQ(MDS_MT_LIST, node->schema->mtype);
+        ASSERT_STREQ(name, node->schema->name);               
+    }
+
     struct mds_node *schema;
     struct mdd_node *data;
 };
@@ -108,3 +148,61 @@ TEST_F(DataParser, test_should_build_single_mo_with_multi_leaf)
     assert_string_leaf("Name", "vc1000", data->child);
     assert_int_leaf("Value", 100, data->child->next);
 }
+
+TEST_F(DataParser, test_should_build_multi_layer_mo)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "Name": "vc1000",
+            "Value": 100,
+            "ChildData": {
+                "Id":100
+            }
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_mo("Data", data);
+    assert_string_leaf("Name", "vc1000", data->child);
+    assert_int_leaf("Value", 100, data->child->next);
+    assert_container("ChildData", data->child->next->next);
+    assert_int_leaf("Id", 100, data->child->next->next->child);
+}
+
+TEST_F(DataParser, test_should_build_multi_layer_mo_disorder)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "ChildData": {
+                "Id":100
+            },
+            "Value": 100,
+            "Name": "vc1000"
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_mo("Data", data);
+    assert_container("ChildData", data->child);
+    assert_int_leaf("Id", 100, data->child->child);
+    assert_int_leaf("Value", 100, data->child->next);    
+    assert_string_leaf("Name", "vc1000", data->child->next->next);
+}
+
+#if 0
+TEST_F(DataParser, test_should_build_list)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "Name": "vc1000",
+            "ChildList": [
+                {"Id": 1},
+                {"Id": 2}
+            ]
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_mo("Data", data);
+    assert_string_leaf("Name", "vc1000", data->child);
+    assert_list("ChildList", data->child->next);
+    assert_list("ChildList", data->child->next->next);
+}
+#endif

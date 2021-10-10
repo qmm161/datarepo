@@ -4,6 +4,7 @@
         "cstdlib": "c",
         "__node_handle": "c",
         "data_parser.h": "c",
-        "macro.h": "c"
+        "macro.h": "c",
+        "typeinfo": "c"
     }
 }

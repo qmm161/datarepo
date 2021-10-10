@@ -39,6 +39,39 @@ void mdd_free_data(struct mdd_node *root)
     mdd_free_self_node(root);
 }
 
+static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *data_json)
+{
+    printf("mdd--try build container: %s-%s\n", schema->name, data_json->string);
+    struct mdd_mo *mo = (struct mdd_mo*) calloc(1, sizeof(struct mdd_mo));
+    mo->schema = schema;
+    return mo;
+}
+
+static struct mdd_node *build_list_node(struct mds_node *schema, cJSON *data_json)
+{
+    return NULL;
+}
+
+static struct mdd_node *build_leaf_node(struct mds_node *schema, cJSON *data_json)
+{
+    printf("mdd--try build leaf: %s-%s\n", schema->name, data_json->string);
+    struct mds_leaf *leaf_schema = (struct mds_leaf*)schema;
+    struct mdd_leaf *leaf = (struct mdd_leaf*) calloc(1, sizeof(struct mdd_leaf));
+    CHECK_DO_RTN_VAL(!leaf, printf("no memory!\n"), NULL);
+
+    leaf->schema = schema;
+    if(leaf_schema->dtype == MDS_DT_STR) {
+        printf("mdd--try build str leaf: %s-%s\n", schema->name, data_json->valuestring);
+        CHECK_DO_RTN_VAL(!cJSON_IsString(data_json), printf("mdd--data is not string\n");free(leaf), NULL);
+        leaf->value.strv = strdup(data_json->valuestring);
+    } else {
+        printf("mdd--try build int leaf: %s-%lld\n", schema->name, data_json->valueint);
+        CHECK_DO_RTN_VAL(!cJSON_IsNumber(data_json), printf("mdd--data is not number\n");free(leaf), NULL);
+        leaf->value.intv = data_json->valueint;
+    }
+    return leaf;
+}
+
 static struct mdd_node *build_self_node(struct mds_node *schema, cJSON *data_json)
 {
     struct mdd_node *data = NULL;
@@ -48,34 +81,15 @@ static struct mdd_node *build_self_node(struct mds_node *schema, cJSON *data_jso
     printf("mdd--try build self node: %s-%s\n", schema->name, data_json->string);
 
     if (is_mo(schema->mtype)) {
-        printf("mdd--try build mo: %s-%s\n", schema->name, data_json->string);
-        CHECK_DO_RTN_VAL(!cJSON_IsObject(data_json), printf("mdd--data is not mo\n"), NULL);
-
-        struct mdd_mo *mo = (struct mdd_mo*) calloc(1, sizeof(struct mdd_mo));
-        memset(mo, 0, sizeof(struct mdd_mo));
-        mo->schema = schema;
-        data = (struct mdd_node*) mo;
-    } else {
-        printf("mdd--try build leaf: %s-%s\n", schema->name, data_json->string);
-        struct mds_leaf *leaf_schema = (struct mds_leaf*)schema;
-        struct mdd_leaf *leaf = (struct mdd_leaf*) calloc(1, sizeof(struct mdd_leaf));
-        CHECK_DO_RTN_VAL(!leaf, printf("no memory!\n"), NULL);
-        memset(leaf, 0, sizeof(struct mdd_leaf));
-        printf("mdd--set schema leaf: %lld-%lld\n", leaf, leaf->schema);
-        leaf->schema = schema;
-        printf("mdd--set schema leaf: %lld-%lld\n", leaf, leaf->schema);
-        if(leaf_schema->dtype == MDS_DT_STR) {
-            printf("mdd--try build str leaf: %s-%s\n", schema->name, data_json->valuestring);
-            CHECK_DO_RTN_VAL(!cJSON_IsString(data_json), printf("mdd--data is not string\n");free(leaf), NULL);
-            leaf->value.strv = strdup(data_json->valuestring);
-            printf("mdd--build str leaf succ: %s-%s\n", leaf->schema->name, leaf->value.strv);
+        if(schema->mtype == MDS_MT_CONTAINER && cJSON_IsObject(data_json)) {
+            data = build_container_node(schema, data_json);
+        } else if (schema->mtype == MDS_MT_LIST && cJSON_IsArray(data_json)) {
+            data = build_list_node(schema, data_json);
         } else {
-            printf("mdd--try build int leaf: %s-%lld\n", schema->name, data_json->valueint);
-            CHECK_DO_RTN_VAL(!cJSON_IsNumber(data_json), printf("mdd--data is not number\n");free(leaf), NULL);
-            leaf->value.intv = data_json->valueint;
-            printf("mdd--build leaf succ: %s-%lld\n", leaf->schema->name, leaf->value.intv);
+            printf("mdd--invalid mo\n");
         }
-        data = (struct mdd_node*)leaf;
+    } else {
+        data = (struct mdd_node*)build_leaf_node(schema, data_json);
     }
 
     printf("mdd--succ build self node: %s-%s\n", schema->name, data_json->string);
@@ -118,16 +132,8 @@ static struct mdd_node *build_child_data(struct mdd_node *curr, struct mds_node 
     struct mdd_node *node = build_mdd_node(schema, data_json);
     CHECK_RTN_VAL(!node, NULL);
 
-    printf("mdd--try build child %s under %s\n", schema->name, curr->schema->name);
-    printf("mdd--node schema %lld--%lld\n", (long long)schema, (long long)node->schema);
-    printf("mdd--22--build child %s under %s\n", node->schema->name, curr->schema->name);
-
-    printf("mdd--cur %lld child--%lld\n", (long long)curr, (long long)curr->child);
-
     curr->child = node;
-    printf("mdd--33--build child %s under %s\n", node->schema->name, curr->schema->name);
     node->parent = curr;
-    printf("mdd--build child %s under %s\n", node->schema->name, curr->schema->name);
     return node;
 }
 
