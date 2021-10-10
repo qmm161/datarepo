@@ -24,7 +24,7 @@ static void mdm_free_self_node(struct mdd_node *node)
 void mdm_free_data(struct mdd_node *root)
 {
     CHECK_RTN(!root);
-    
+
     struct mdd_node *child = root->child;
     struct mdd_node *next = root->next;
 
@@ -45,25 +45,40 @@ static struct mdd_node *build_self_node(struct mds_node *schema, cJSON *data_jso
     CHECK_DO_RTN_VAL(strcmp(schema->name, data_json->string), 
         printf("mdd--schema not match %s-%s\n", schema->name, data_json->string), NULL);
 
+    printf("mdd--try build self node: %s-%s\n", schema->name, data_json->string);
+
     if (is_mo(schema->mtype)) {
+        printf("mdd--try build mo: %s-%s\n", schema->name, data_json->string);
         CHECK_DO_RTN_VAL(!cJSON_IsObject(data_json), printf("mdd--data is not mo\n"), NULL);
 
-        struct mdd_mo *mo = (struct mdd_mo*) calloc(1, sizeof(struct mdd_mo*));
+        struct mdd_mo *mo = (struct mdd_mo*) calloc(1, sizeof(struct mdd_mo));
+        memset(mo, 0, sizeof(struct mdd_mo));
         mo->schema = schema;
         data = (struct mdd_node*) mo;
     } else {
+        printf("mdd--try build leaf: %s-%s\n", schema->name, data_json->string);
         struct mds_leaf *leaf_schema = (struct mds_leaf*)schema;
-        struct mdd_leaf *leaf = (struct mdd_leaf*) calloc(1, sizeof(struct mdd_leaf*));
+        struct mdd_leaf *leaf = (struct mdd_leaf*) calloc(1, sizeof(struct mdd_leaf));
+        CHECK_DO_RTN_VAL(!leaf, printf("no memory!\n"), NULL);
+        memset(leaf, 0, sizeof(struct mdd_leaf));
+        printf("mdd--set schema leaf: %lld-%lld\n", leaf, leaf->schema);
         leaf->schema = schema;
+        printf("mdd--set schema leaf: %lld-%lld\n", leaf, leaf->schema);
         if(leaf_schema->dtype == MDS_DT_STR) {
+            printf("mdd--try build str leaf: %s-%s\n", schema->name, data_json->valuestring);
             CHECK_DO_RTN_VAL(!cJSON_IsString(data_json), printf("mdd--data is not string\n");free(leaf), NULL);
             leaf->value.strv = strdup(data_json->valuestring);
+            printf("mdd--build str leaf succ: %s-%s\n", leaf->schema->name, leaf->value.strv);
         } else {
+            printf("mdd--try build int leaf: %s-%lld\n", schema->name, data_json->valueint);
             CHECK_DO_RTN_VAL(!cJSON_IsNumber(data_json), printf("mdd--data is not number\n");free(leaf), NULL);
             leaf->value.intv = data_json->valueint;
+            printf("mdd--build leaf succ: %s-%lld\n", leaf->schema->name, leaf->value.intv);
         }
         data = (struct mdd_node*)leaf;
     }
+
+    printf("mdd--succ build self node: %s-%s\n", schema->name, data_json->string);
 
     return data;
 }
@@ -103,8 +118,16 @@ static struct mdd_node *build_child_data(struct mdd_node *curr, struct mds_node 
     struct mdd_node *node = build_mdd_node(schema, data_json);
     CHECK_RTN_VAL(!node, NULL);
 
+    printf("mdd--try build child %s under %s\n", schema->name, curr->schema->name);
+    printf("mdd--node schema %lld--%lld\n", (long long)schema, (long long)node->schema);
+    printf("mdd--22--build child %s under %s\n", node->schema->name, curr->schema->name);
+
+    printf("mdd--cur %lld child--%lld\n", (long long)curr, (long long)curr->child);
+
     curr->child = node;
+    printf("mdd--33--build child %s under %s\n", node->schema->name, curr->schema->name);
     node->parent = curr;
+    printf("mdd--build child %s under %s\n", node->schema->name, curr->schema->name);
     return node;
 }
 
@@ -116,6 +139,7 @@ static struct mdd_node *build_next_data(struct mdd_node *curr, struct mds_node *
     curr->next = node;
     node->prev = curr;
     node->parent = curr->parent;
+    printf("mdd--build next %s by %s\n", node->schema->name, curr->schema->name);
     return node;
 }
 
@@ -136,6 +160,7 @@ static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json
 
     find_child_data(schema, data_json, &schema_child, &json_child);
     if (json_child && schema_child) {
+        printf("mdd--try build child %s under %s-%lld-%lld\n", schema_child->name, node->schema->name, node, node->child);
         child = build_child_data(node, schema_child, json_child);
         CHECK_GOTO(!child, ERR_OUT);
     } 

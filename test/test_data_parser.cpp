@@ -62,6 +62,7 @@ public:
     void assert_string_leaf(const char *name, const char *value, struct mdd_node *node)
     {
         ASSERT_EQ(MDS_MT_LEAF, node->schema->mtype);
+        ASSERT_EQ(MDS_DT_STR, ((struct mds_leaf*)node->schema)->dtype);
         ASSERT_STREQ(name, node->schema->name);
 
         struct mdd_leaf *leaf = (struct mdd_leaf*)node;
