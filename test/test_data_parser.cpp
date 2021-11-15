@@ -68,7 +68,7 @@ class DataParser : public Test
 public:
     void SetUp()
     {
-        schema = mdm_load_model(TEST_MODEL_JSON);
+        schema = mds_load_model(TEST_MODEL_JSON);
         data = NULL;
     }
 
@@ -77,7 +77,7 @@ public:
         mdd_free_data(data);
         data = NULL;
 
-        mdm_free_model(schema);
+        mds_free_model(schema);
         schema = NULL;
     }
 

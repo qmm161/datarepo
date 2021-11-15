@@ -167,11 +167,11 @@ static struct mds_node *build_mds_node(cJSON *json_node)
     return node;
 
     ERR_OUT:
-    mdm_free_model(node);
+    mds_free_model(node);
     return NULL;
 }
 
-struct mds_node *mdm_load_model(const char *model_str)
+struct mds_node *mds_load_model(const char *model_str)
 {
     struct mds_node *model_data = NULL;
     cJSON *root = cJSON_Parse(model_str);
@@ -185,7 +185,7 @@ struct mds_node *mdm_load_model(const char *model_str)
     return model_data;
 }
 
-static void mdm_free_self_node(struct mds_node *node)
+static void mds_free_self_node(struct mds_node *node)
 {
     if(node) {
         free(node->name);
@@ -193,23 +193,23 @@ static void mdm_free_self_node(struct mds_node *node)
     }
 }
 
-void mdm_free_model(struct mds_node *root)
+void mds_free_model(struct mds_node *root)
 {
     struct mds_node *child = root->child;
     struct mds_node *next = root->next;
 
     if(child) {
-        mdm_free_model(child);
+        mds_free_model(child);
     }
 
     if(next) {
-        mdm_free_model(next);
+        mds_free_model(next);
     }
 
-    mdm_free_self_node(root);
+    mds_free_self_node(root);
 }
 
-struct mds_node *mdm_find_child_schema(struct mds_node*curr, const char *name)
+struct mds_node *mds_find_child_schema(struct mds_node*curr, const char *name)
 {
     CHECK_RTN_VAL(!curr || !name, NULL);
 
@@ -224,7 +224,7 @@ struct mds_node *mdm_find_child_schema(struct mds_node*curr, const char *name)
     return NULL;
 }
 
-struct mds_node *mdm_find_next_schema(struct mds_node*curr, const char *name)
+struct mds_node *mds_find_next_schema(struct mds_node*curr, const char *name)
 {
     CHECK_RTN_VAL(!curr || !name, NULL);
 

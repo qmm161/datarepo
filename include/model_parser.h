@@ -61,10 +61,10 @@ struct mds_leaf
 #define is_list_node(schema) ((schema)->mtype==MDS_MT_LIST)
 #define is_leaf_node(schema) ((schema)->mtype==MDS_MT_LEAF)
 
-struct mds_node *mdm_load_model(const char *model_str);
-void mdm_free_model(struct mds_node *root);
-struct mds_node *mdm_find_child_schema(struct mds_node*curr, const char *name);
-struct mds_node *mdm_find_next_schema(struct mds_node*curr, const char *name);
+struct mds_node *mds_load_model(const char *model_str);
+void mds_free_model(struct mds_node *root);
+struct mds_node *mds_find_child_schema(struct mds_node*curr, const char *name);
+struct mds_node *mds_find_next_schema(struct mds_node*curr, const char *name);
 
 #ifdef __cplusplus
 }

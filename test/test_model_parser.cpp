@@ -14,7 +14,7 @@ public:
 
     void TearDown()
     {
-        mdm_free_model(root);
+        mds_free_model(root);
         root = NULL;
     }
 
@@ -56,7 +56,7 @@ TEST_F(ModelTest, should_load_mo_succ)
     }
 })";
 
-    root = mdm_load_model(VALID_MODEL_JSON);
+    root = mds_load_model(VALID_MODEL_JSON);
     assert_mo("Data", root);
 }
 
@@ -76,7 +76,7 @@ TEST_F(ModelTest, should_load_mo_and_leaf_succ)
     }
 })";
 
-    root = mdm_load_model(VALID_MODEL_JSON);
+    root = mds_load_model(VALID_MODEL_JSON);
     assert_mo("Data", root);
     assert_leaf("Name", MDS_DT_STR, root->child);
 }
@@ -103,7 +103,7 @@ TEST_F(ModelTest, should_load_mo_and_multi_leaf_succ)
     }
 })";
 
-    root = mdm_load_model(VALID_MODEL_JSON);
+    root = mds_load_model(VALID_MODEL_JSON);
     assert_mo("Data", root);
     assert_leaf("Name", MDS_DT_STR, root->child);
     assert_leaf("Value", MDS_DT_INT, root->child->next);
@@ -143,7 +143,7 @@ TEST_F(ModelTest, should_load_multi_mo_and_multi_leaf_succ)
     }
 })";
 
-    root = mdm_load_model(VALID_MODEL_JSON);
+    root = mds_load_model(VALID_MODEL_JSON);
     assert_mo("Data", root);
     assert_leaf("Name", MDS_DT_STR, root->child);
     assert_leaf("Value", MDS_DT_INT, root->child->next);
@@ -185,7 +185,7 @@ TEST_F(ModelTest, should_load_complicated_schema_succ)
     }
 })";
 
-    root = mdm_load_model(VALID_MODEL_JSON);
+    root = mds_load_model(VALID_MODEL_JSON);
     assert_mo("Data", root);
     assert_leaf("Name", MDS_DT_STR, root->child);
     assert_list("ChildData", root->child->next);

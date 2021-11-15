@@ -52,7 +52,7 @@ static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *dat
     parent = node;
     struct mdd_node *prev = NULL;
     while(data_child) {
-        struct mds_node *schema_child = mdm_find_child_schema(schema, data_child->string);
+        struct mds_node *schema_child = mds_find_child_schema(schema, data_child->string);
         struct mdd_node *node_child = NULL;
         CHECK_DO_GOTO(!schema_child, 
             LOG_WARN("invalid child data name %s under %s", data_json->string, schema->name),ERR_OUT);

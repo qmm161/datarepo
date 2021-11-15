@@ -53,7 +53,7 @@ int repo_init(const char *schema_path, const char *data_path)
 
     char *schema_buff = load_file(schema_path);
     CHECK_DO_RTN_VAL(!schema_buff, LOG_WARN("failed to load schema"), -1);
-    ctx.schema = mdm_load_model(schema_buff);
+    ctx.schema = mds_load_model(schema_buff);
     free(schema_buff);
     schema_buff = NULL;
     
@@ -72,7 +72,7 @@ void repo_free()
     free(ctx.schema_file);
     mdd_free_data(ctx.running);
     mdd_free_data(ctx.editing);
-    mdm_free_model(ctx.schema);
+    mds_free_model(ctx.schema);
     memset(&ctx, 0, sizeof(struct repo_ctx));
 }
 
