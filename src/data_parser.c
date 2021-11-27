@@ -55,7 +55,7 @@ static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *dat
         struct mds_node *schema_child = mds_find_child_schema(schema, data_child->string);
         struct mdd_node *node_child = NULL;
         CHECK_DO_GOTO(!schema_child, 
-            LOG_WARN("invalid child data name %s under %s", data_json->string, schema->name),ERR_OUT);
+            LOG_WARN("invalid child data name %s under %s", data_child->string, schema->name),ERR_OUT);
         
         node_child = build_mdd_node(schema_child, data_child, parent);
         if(!prev) {
@@ -77,7 +77,7 @@ static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *dat
 
 static struct mdd_node *build_list_node(struct mds_node *schema, cJSON *data_json, struct mdd_node *parent)
 {
-    CHECK_DO_RTN_VAL(!cJSON_IsArray(data_json), LOG_WARN("invalid list data"), NULL);
+    CHECK_DO_RTN_VAL(!cJSON_IsArray(data_json), LOG_WARN("invalid list data: %s", schema->name), NULL);
 
     LOG_INFO("mdd--trye build list: %s-%s", schema->name, data_json->string);
     struct mdd_node *first = NULL;
@@ -148,4 +148,131 @@ struct mdd_node *mdd_parse_data(struct mds_node *schema, const char *data_json)
     
     cJSON_Delete(json_root);
     return data_root;
+}
+
+static void split_mo_key_value(char *fragment, char **mo, char **key, char **value)
+{
+    *mo = fragment;
+    *key = NULL;
+    *value = NULL;
+
+    char *tmp = fragment;
+    int len = strlen(fragment);
+    for(int i = 0; i < len; i++) {
+        if (*tmp == '[') {
+            *tmp = '\0';
+            *key = tmp + 1; 
+        } else if (*tmp == '=') {
+            *tmp = '\0';
+            *value = tmp + 1;
+        } else if (*tmp == ']') {
+            *tmp = '\0';
+        }
+        tmp++;
+    }
+}
+
+static char *next_word(char **path_head)
+{
+    int len = strlen(*path_head);
+    char *word = *path_head;
+    char *tail = *path_head;
+    for (int i = 0; i < len; i++) {
+        if (*tail == '/') {
+            *tail = '\0';
+            *path_head = tail + 1;
+            return word;
+        }
+        tail++;
+    }
+    *path_head = tail;
+    return word;
+}
+
+static int next_fragment(char **path_head, char **mo, char **key, char **value)
+{
+    char *fragment = next_word(path_head);
+    if (!fragment || strlen(fragment) == 0) {
+        return 0;
+    }
+
+    split_mo_key_value(fragment, mo, key, value);
+    return 1;
+}
+
+static int match_node_value(struct mdd_node *node, char *value)
+{
+    CHECK_RTN_VAL(node->schema->mtype != MDS_MT_LEAF, 0); 
+
+    struct mds_leaf* schema = (struct mds_leaf*)node->schema;
+    struct mdd_leaf* leaf = (struct mdd_leaf*)node;
+
+    if(schema->dtype == MDS_DT_STR) {
+        return strcmp(leaf->value.strv, value) == 0 ? 1 : 0;
+    } else if(schema->dtype == MDS_DT_INT) {
+        char *end;
+        return strtoll(value, &end, 10) == leaf->value.intv ? 1 : 0;
+    }
+    return 0;
+}
+
+static int match_node(struct mdd_node *node, char *name, char *key, char *value)
+{
+    int rlt = strcmp(node->schema->name, name);
+    CHECK_RTN_VAL(rlt, 0);
+
+    if (key && value) {
+        for(struct mdd_node *iter = node->child; iter; iter = iter->next) {
+            if(!strcmp(iter->schema->name, key) && match_node_value(iter, value)) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return 1;
+}
+
+static struct mdd_node *find_child(struct mdd_node *cur, char *name, char *key, char *value)
+{
+    for(struct mdd_node *iter = cur->child; iter; iter = iter->next) {
+        if (match_node(iter, name, key, value)) {
+            return iter;
+        }
+    }
+    return NULL;
+}
+
+struct mdd_node * mdd_get_data(struct mdd_node *root, const char *path)
+{
+    int rlt = 0, has_next = 0;
+    struct mdd_node *out = NULL;
+    char *dup_path = strdup(path);
+    CHECK_DO_RTN_VAL(!dup_path, LOG_WARN("Failed to dup string"), NULL);
+    
+    struct mdd_node *target = NULL;
+    char *name = NULL;
+    char *key = NULL;
+    char *value = NULL;
+    char *tmp = dup_path;
+    has_next = next_fragment(&tmp, &name, &key, &value);
+    CHECK_DO_GOTO(!has_next, LOG_WARN("Failed to parse first fragment:%s", dup_path); rlt = -1, CLEAN);
+
+    target = root;
+    CHECK_DO_GOTO(!match_node(target, name, key, value), LOG_WARN("Failed to match root mo:%s-%s", name, target->schema->name); rlt = -1, 
+        CLEAN);
+    do {
+        has_next = next_fragment(&tmp, &name, &key, &value);
+        if (!has_next) {
+            out = target;
+            goto CLEAN;
+        }
+        target = find_child(target, name, key, value);
+    } while(target);
+    rlt = -1;
+
+    CLEAN:
+    if(dup_path) {
+        free(dup_path);
+    }
+    return out;
 }

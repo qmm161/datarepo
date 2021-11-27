@@ -1,0 +1,75 @@
+{
+    "Data": {
+        "@attr": {
+            "mtype": "container"
+        },
+        "Name": {
+            "@attr": {
+                "mtype": "leaf",
+                "dtype": "string"
+            }
+        },
+        "Value": {
+            "@attr": {
+                "mtype": "leaf",
+                "dtype": "int"
+            }
+        },
+        "ChildData": {
+            "@attr": {
+                "mtype": "container"
+            },
+            "IntLeaf": {
+                "@attr": {
+                    "mtype": "leaf",
+                    "dtype": "int"
+                }
+            }
+        },
+        "ChildList": {
+            "@attr": {
+                "mtype": "list"
+            },
+            "Id": {
+                "@attr": {
+                    "mtype": "leaf",
+                    "dtype": "int"
+                }
+            },
+            "IntLeaf": {
+                "@attr": {
+                    "mtype": "leaf",
+                    "dtype": "int"
+                }
+            },
+            "SubChildContainer": {
+                "@attr": {
+                    "mtype": "container"
+                },
+                "StrLeaf": {
+                    "@attr": {
+                        "mtype": "leaf",
+                        "dtype": "string"
+                    }
+                }
+            },
+            "SubChildList": {
+                "@attr": {
+                    "mtype": "list"
+                },
+                "Id": {
+                    "@attr": {
+                        "mtype": "leaf",
+                        "dtype": "int"
+                    }
+                },
+                "StrLeaf": {
+                    "@attr": {
+                        "mtype": "leaf",
+                        "dtype": "string"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -47,7 +47,7 @@ struct mdd_leaf
 
 struct mdd_node *mdd_parse_data(struct mds_node *schema, const char *data_json);
 void mdd_free_data(struct mdd_node *root);
-
+struct mdd_node * mdd_get_data(struct mdd_node *root, const char *path);
 
 #ifdef __cplusplus
 }

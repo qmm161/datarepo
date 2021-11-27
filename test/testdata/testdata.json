@@ -1,0 +1,44 @@
+{
+    "Data": {
+        "Name": "TestData",
+        "Value": 100,
+        "ChildData": {
+            "IntLeaf": 100
+        },
+        "ChildList": [
+            {
+                "Id": 1,
+                "IntLeaf": 1
+            },
+            {
+                "Id": 2,
+                "IntLeaf": 2
+            },
+            {
+                "Id": 3,
+                "IntLeaf": 3
+            },
+            {
+                "Id": 11,
+                "IntLeaf": 11,
+                "SubChildContainer": {
+                    "StrLeaf": "aa"
+                }
+            },
+            {
+                "Id": 22,
+                "IntLeaf": 22,
+                "SubChildList": [
+                    {
+                        "Id": 22,
+                        "StrLeaf": "22"
+                    },
+                    {
+                        "Id": 222,
+                        "StrLeaf": "222"
+                    }
+                ]
+            }
+        ]
+    }
+}

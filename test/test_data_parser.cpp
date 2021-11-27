@@ -1,7 +1,8 @@
 #include "gtest/gtest.h"
 #include "data_parser.h"
 
-using namespace std;
+#include "model_test_util.h"
+
 using namespace testing;
 
 const char *TEST_MODEL_JSON = R"({
@@ -63,7 +64,7 @@ const char *TEST_MODEL_JSON = R"({
     }
 })";
 
-class DataParser : public Test
+class DataParser : public Test, public ModelTestUtil
 {
 public:
     void SetUp()
@@ -81,44 +82,6 @@ public:
         schema = NULL;
     }
 
-    void assert_mo(const char *name, struct mdd_node *node)
-    {
-        ASSERT_EQ(MDS_MT_CONTAINER, node->schema->mtype);
-        ASSERT_STREQ(name, node->schema->name);
-    }
-
-    void assert_string_leaf(const char *name, const char *value, struct mdd_node *node)
-    {
-        ASSERT_EQ(MDS_MT_LEAF, node->schema->mtype);
-        ASSERT_EQ(MDS_DT_STR, ((struct mds_leaf*)node->schema)->dtype);
-        ASSERT_STREQ(name, node->schema->name);
-
-        struct mdd_leaf *leaf = (struct mdd_leaf*)node;
-        ASSERT_STREQ(value, leaf->value.strv);
-    }
-
-    void assert_int_leaf(const char *name, long long value, struct mdd_node *node)
-    {
-        ASSERT_EQ(MDS_MT_LEAF, node->schema->mtype);
-        ASSERT_EQ(MDS_DT_INT, ((struct mds_leaf*)node->schema)->dtype);
-        ASSERT_STREQ(name, node->schema->name);
-
-        struct mdd_leaf *leaf = (struct mdd_leaf*)node;
-        ASSERT_EQ(value, leaf->value.intv);
-    }
-
-    void assert_container(const char *name, struct mdd_node *node)
-    {
-        ASSERT_EQ(MDS_MT_CONTAINER, node->schema->mtype);
-        ASSERT_STREQ(name, node->schema->name);        
-    }
-
-    void assert_list(const char *name, struct mdd_node *node)
-    {
-        ASSERT_EQ(MDS_MT_LIST, node->schema->mtype);
-        ASSERT_STREQ(name, node->schema->name);               
-    }
-
     struct mds_node *schema;
     struct mdd_node *data;
 };
@@ -131,8 +94,8 @@ TEST_F(DataParser, test_should_build_single_mo)
         }
     })";
     data = mdd_parse_data(schema, TEST_DATA_JSON);
-    assert_mo("Data", data);
-    assert_string_leaf("Name", "vc1000", data->child);
+    assert_data_container("Data", data);
+    assert_data_string_leaf("Name", "vc1000", data->child);
 }
 
 TEST_F(DataParser, test_should_build_single_mo_with_multi_leaf)
@@ -144,9 +107,9 @@ TEST_F(DataParser, test_should_build_single_mo_with_multi_leaf)
         }
     })";
     data = mdd_parse_data(schema, TEST_DATA_JSON);
-    assert_mo("Data", data);
-    assert_string_leaf("Name", "vc1000", data->child);
-    assert_int_leaf("Value", 100, data->child->next);
+    assert_data_container("Data", data);
+    assert_data_string_leaf("Name", "vc1000", data->child);
+    assert_data_int_leaf("Value", 100, data->child->next);
 }
 
 TEST_F(DataParser, test_should_build_multi_layer_mo)
@@ -161,11 +124,11 @@ TEST_F(DataParser, test_should_build_multi_layer_mo)
         }
     })";
     data = mdd_parse_data(schema, TEST_DATA_JSON);
-    assert_mo("Data", data);
-    assert_string_leaf("Name", "vc1000", data->child);
-    assert_int_leaf("Value", 100, data->child->next);
-    assert_container("ChildData", data->child->next->next);
-    assert_int_leaf("Id", 100, data->child->next->next->child);
+    assert_data_container("Data", data);
+    assert_data_string_leaf("Name", "vc1000", data->child);
+    assert_data_int_leaf("Value", 100, data->child->next);
+    assert_data_container("ChildData", data->child->next->next);
+    assert_data_int_leaf("Id", 100, data->child->next->next->child);
 }
 
 TEST_F(DataParser, test_should_build_multi_layer_mo_disorder)
@@ -180,11 +143,11 @@ TEST_F(DataParser, test_should_build_multi_layer_mo_disorder)
         }
     })";
     data = mdd_parse_data(schema, TEST_DATA_JSON);
-    assert_mo("Data", data);
-    assert_container("ChildData", data->child);
-    assert_int_leaf("Id", 100, data->child->child);
-    assert_int_leaf("Value", 100, data->child->next);    
-    assert_string_leaf("Name", "vc1000", data->child->next->next);
+    assert_data_container("Data", data);
+    assert_data_container("ChildData", data->child);
+    assert_data_int_leaf("Id", 100, data->child->child);
+    assert_data_int_leaf("Value", 100, data->child->next);    
+    assert_data_string_leaf("Name", "vc1000", data->child->next->next);
 }
 
 TEST_F(DataParser, test_should_build_list)
@@ -199,10 +162,10 @@ TEST_F(DataParser, test_should_build_list)
         }
     })";
     data = mdd_parse_data(schema, TEST_DATA_JSON);
-    assert_mo("Data", data);
-    assert_string_leaf("Name", "vc1000", data->child);
-    assert_list("ChildList", data->child->next);
-    assert_list("ChildList", data->child->next->next);
+    assert_data_container("Data", data);
+    assert_data_string_leaf("Name", "vc1000", data->child);
+    assert_data_list("ChildList", data->child->next);
+    assert_data_list("ChildList", data->child->next->next);
 }
 
 TEST_F(DataParser, test_should_build_multi_layer_list)
@@ -223,14 +186,14 @@ TEST_F(DataParser, test_should_build_multi_layer_list)
         }
     })";
     data = mdd_parse_data(schema, TEST_DATA_JSON);
-    assert_mo("Data", data);
-    assert_string_leaf("Name", "vc1000", data->child);
-    assert_list("ChildList", data->child->next);
-    assert_int_leaf("Id", 1, data->child->next->child);
-    assert_list("SubChildList", data->child->next->child->next);
-    assert_int_leaf("Id", 1, data->child->next->child->next->child);
-    assert_int_leaf("IntLeaf", 100, data->child->next->child->next->child->next);
-    assert_list("SubChildList", data->child->next->child->next->next);
-    assert_list("ChildList", data->child->next->next);
-    assert_int_leaf("Id", 2, data->child->next->next->child);
+    assert_data_container("Data", data);
+    assert_data_string_leaf("Name", "vc1000", data->child);
+    assert_data_list("ChildList", data->child->next);
+    assert_data_int_leaf("Id", 1, data->child->next->child);
+    assert_data_list("SubChildList", data->child->next->child->next);
+    assert_data_int_leaf("Id", 1, data->child->next->child->next->child);
+    assert_data_int_leaf("IntLeaf", 100, data->child->next->child->next->child->next);
+    assert_data_list("SubChildList", data->child->next->child->next->next);
+    assert_data_list("ChildList", data->child->next->next);
+    assert_data_int_leaf("Id", 2, data->child->next->next->child);
 }

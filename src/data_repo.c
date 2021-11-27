@@ -19,7 +19,7 @@ struct repo_ctx
 
 static struct repo_ctx ctx;
 
-char *load_file(const char *file_path)
+static char *load_file(const char *file_path)
 {
     long size = 0;
     char *buffer;
@@ -74,6 +74,14 @@ void repo_free()
     mdd_free_data(ctx.editing);
     mds_free_model(ctx.schema);
     memset(&ctx, 0, sizeof(struct repo_ctx));
+}
+
+int repo_get(const char *path, struct mdd_node **out)
+{
+    CHECK_DO_RTN_VAL(!path || !out, LOG_WARN("NULL Para"), -1);
+
+    *out = mdd_get_data(ctx.running, path);
+    return (*out) ? 0 : -1;
 }
 
 int repo_edit(const char *edit_data)
