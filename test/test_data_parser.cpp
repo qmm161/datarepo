@@ -197,3 +197,102 @@ TEST_F(DataParser, test_should_build_multi_layer_list)
     assert_data_list("ChildList", data->child->next->next);
     assert_data_int_leaf("Id", 2, data->child->next->next->child);
 }
+
+
+TEST_F(DataParser, test_should_dump_root_container_as_json)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "Name": "vc1000"
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_data_container("Data", data);
+
+    char *dump = NULL;
+    int rlt = mdd_dump_data(data, &dump);
+    ASSERT_EQ(0, rlt);
+
+    printf("dump rlt:%s\n", dump);
+
+    assert_equal_json(dump, TEST_DATA_JSON);
+    free(dump);
+}
+
+TEST_F(DataParser, test_should_dump_multi_layer_mo)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "Name": "vc1000",
+            "Value": 100,
+            "ChildData": {
+                "Id":100
+            }
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_data_container("Data", data);
+
+    char *dump = NULL;
+    int rlt = mdd_dump_data(data, &dump);
+    ASSERT_EQ(0, rlt);
+
+    printf("dump rlt:%s\n", dump);
+
+    assert_equal_json(dump, TEST_DATA_JSON);
+    free(dump);
+}
+
+TEST_F(DataParser, test_should_dump_list)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "Name": "vc1000",
+            "ChildList": [
+                {"Id": 1},
+                {"Id": 2}
+            ]
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_data_container("Data", data);
+
+    char *dump = NULL;
+    int rlt = mdd_dump_data(data, &dump);
+    ASSERT_EQ(0, rlt);
+
+    printf("dump rlt:%s\n", dump);
+
+    assert_equal_json(dump, TEST_DATA_JSON);
+    free(dump);
+}
+
+TEST_F(DataParser, test_should_dump_multi_layer_list)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "Name": "vc1000",
+            "ChildList": [
+                {
+                    "Id": 1, 
+                    "SubChildList":[
+                        {"Id": 1, "IntLeaf":100},
+                        {"Id": 2, "IntLeaf":200}
+                    ]
+                },
+                {"Id": 2}
+            ]
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_data_container("Data", data);
+
+    char *dump = NULL;
+    int rlt = mdd_dump_data(data, &dump);
+    ASSERT_EQ(0, rlt);
+
+    printf("dump rlt:%s\n", dump);
+
+    assert_equal_json(dump, TEST_DATA_JSON);
+    free(dump);
+}

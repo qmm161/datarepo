@@ -9,5 +9,6 @@
         "data_repo.h": "c",
         "log.h": "c",
         "model_parser.h": "c"
-    }
+    },
+    "cmake.configureOnOpen": false
 }

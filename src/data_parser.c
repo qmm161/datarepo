@@ -7,6 +7,7 @@
 #include "log.h"
 
 static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json, struct mdd_node *parent);
+static int dump_mdd_node(struct mdd_node *node, char **buf, size_t *size, size_t *posi, struct mdd_node **next);
 
 static void mdd_free_self_node(struct mdd_node *node)
 {
@@ -275,4 +276,189 @@ struct mdd_node * mdd_get_data(struct mdd_node *root, const char *path)
         free(dup_path);
     }
     return out;
+}
+
+static int dump_write_str(char **buf, size_t *size, size_t *posi, const char *str)
+{
+    size_t write_len = strlen(str);
+    size_t need_len = *posi + write_len + 1;
+    if (need_len > *size) {
+        size_t new_size = (*size) * 2;
+        new_size = new_size > need_len ? new_size : need_len;
+        char *new_buf = realloc(*buf, new_size);
+        CHECK_DO_RTN_VAL(!new_buf, LOG_WARN("Failed to realloc memory!"), -1);
+
+        *buf = new_buf;
+        *size = new_size;
+    }
+
+    strcat(*buf + *posi, str);
+    *posi = *posi + write_len;
+    return 0;
+}
+
+static int dump_node_name(const char *name, char **buf, size_t *size, size_t *posi)
+{
+    int rlt = dump_write_str(buf, size, posi, "\"");
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump '\"'!"), -1);
+
+    rlt = dump_write_str(buf, size, posi, name);
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump node name!"), -1);
+
+    rlt = dump_write_str(buf, size, posi, "\"");
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump '\"'!"), -1);
+
+    return 0;
+}
+
+static int dump_container_body(struct mdd_node *node, char **buf, size_t *size, size_t *posi)
+{
+    int rlt = dump_write_str(buf, size, posi, "{");
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump '{'"), -1);
+
+    struct mdd_node *n = node->child;
+    struct mdd_node *next = NULL;
+    while(n) {
+        if (n != node->child) {
+            rlt = dump_write_str(buf, size, posi, ",");
+            CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump ','"), -1);
+        }
+
+        rlt = dump_mdd_node(n, buf, size, posi, &next);
+        CHECK_RTN_VAL(rlt, -1);
+
+        n = next;
+    }
+
+    rlt = dump_write_str(buf, size, posi, "}");
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump '}'"), -1);
+
+    return rlt;
+}
+
+static int dump_container_node(struct mdd_node *node, char **buf, size_t *size, size_t *posi, struct mdd_node **next)
+{
+    int rlt = dump_node_name(node->schema->name, buf, size, posi);
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump node name!"), -1);
+
+    rlt = dump_write_str(buf, size, posi, ":");
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump ':'"), -1);
+
+    rlt = dump_container_body(node, buf, size, posi);
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump container body"), -1);
+
+    *next = node->next;
+
+    return 0;
+}
+
+static int dump_list_node(struct mdd_node *node, char **buf, size_t *size, size_t *posi, struct mdd_node **next)
+{
+    int rlt = dump_node_name(node->schema->name, buf, size, posi);
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump list name!"), -1);
+
+    rlt = dump_write_str(buf, size, posi, ":[");
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump ':['"), -1);
+
+    struct mdd_node *n = node;
+    while(n && n->schema == node->schema) {
+        if (n != node) {
+            rlt = dump_write_str(buf, size, posi, ",");
+            CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump ','"), -1);
+        }
+
+        rlt = dump_container_body(n, buf, size, posi);
+        CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump list body"), -1);
+
+        n = n->next;
+    }
+
+    rlt = dump_write_str(buf, size, posi, "]");
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump ']'"), -1);
+
+    *next = n;
+    return rlt;
+}
+
+static int dump_leaf_node(struct mdd_leaf *leaf, char **buf, size_t *size, size_t *posi, struct mdd_node **next)
+{
+    int rlt = dump_node_name(leaf->schema->name, buf, size, posi);
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump leaf name!"), -1);
+
+    rlt = dump_write_str(buf, size, posi, ":");
+    CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump ':'"), -1);
+
+    if (is_str_leaf((struct mds_leaf*)(leaf->schema))) {
+        rlt = dump_write_str(buf, size, posi, "\"");
+        CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump '\"'"), -1);
+
+        rlt = dump_write_str(buf, size, posi, leaf->value.strv);
+        CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump str value"), -1);
+
+        rlt = dump_write_str(buf, size, posi, "\"");
+        CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump '\"'"), -1);
+    } else if(is_int_leaf((struct mds_leaf*)(leaf->schema))) {
+        char tmp[40];
+        memset(tmp, 0, sizeof(tmp));
+        sprintf(tmp, "%lld", leaf->value.intv);
+        rlt = dump_write_str(buf, size, posi, tmp);
+        CHECK_DO_RTN_VAL(rlt, LOG_WARN("Failed to dump int value"), -1);
+    } else {
+        LOG_WARN("Invalid leaf type");
+        return -1;
+    }
+
+    *next = leaf->next;
+    return 0;
+}
+
+static int dump_mdd_node(struct mdd_node *node, char **buf, size_t *size, size_t *posi, struct mdd_node **next)
+{
+    int rlt = 0;
+    switch (node->schema->mtype) {
+        case MDS_MT_CONTAINER:
+            rlt = dump_container_node(node, buf, size, posi, next);
+        break;
+    
+        case MDS_MT_LEAF:
+            rlt = dump_leaf_node((struct mdd_leaf*)node, buf, size, posi, next);
+        break;
+
+        case MDS_MT_LIST:
+            rlt = dump_list_node(node, buf, size, posi, next);
+        break;
+
+        default:
+        LOG_WARN("Invalid schema type:%d", node->schema->mtype);
+        return -1;
+    }
+    return rlt;
+}
+
+int mdd_dump_data(struct mdd_node *root, char **json_str)
+{
+    CHECK_DO_RTN_VAL(!root || !json_str, LOG_WARN("Null arg"), -1);
+    
+    size_t size = 100*1024;
+    size_t posi = 0;
+    char *buf = calloc(1, size);
+    CHECK_DO_RTN_VAL(!buf, LOG_WARN("No memory"), -1);
+
+    struct mdd_node *cur = root;
+    struct mdd_node *next = NULL;
+    int rlt = dump_write_str(&buf, &size, &posi, "{");
+    CHECK_DO_GOTO(rlt, LOG_WARN("Failed to dump '{'"), CLEAN);
+
+    rlt = dump_mdd_node(cur, &buf, &size, &posi, &next);
+    CHECK_DO_GOTO(rlt, LOG_WARN("Failed to dump data tree"), CLEAN);
+
+    dump_write_str(&buf, &size, &posi, "}");
+    CHECK_DO_GOTO(rlt, LOG_WARN("Failed to dump '}'"), CLEAN);
+
+    *json_str = buf;
+    return 0;    
+
+    CLEAN:
+    free(buf);
+    return -1;
 }

@@ -2,6 +2,7 @@
 #define _MODEL_TEST_UTIL_
 
 #include <gtest/gtest.h>
+#include "cjson/cJSON.h"
 
 #include "data_parser.h"
 #include "model_parser.h"
@@ -64,6 +65,25 @@ public:
 
         struct mdd_leaf *leaf = (struct mdd_leaf*)node;
         ASSERT_EQ(value, leaf->value.intv);
+    }
+
+    void assert_equal_json(const char *expect, const char *target)
+    {
+        ASSERT_NE((const char*)NULL, expect);
+        ASSERT_NE((const char*)NULL, target);
+
+        cJSON *expectJs = cJSON_Parse(expect);
+        cJSON *targetJs = cJSON_Parse(target);
+
+        char *expectDump = cJSON_PrintUnformatted(expectJs);
+        char *targetDump = cJSON_PrintUnformatted(targetJs);
+        ASSERT_STREQ(expectDump, targetDump);
+
+        free(expectDump);
+        free(targetDump);
+
+        cJSON_Delete(expectJs);
+        cJSON_Delete(targetJs);
     }
 };
 

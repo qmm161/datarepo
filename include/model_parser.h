@@ -60,6 +60,8 @@ struct mds_leaf
 #define is_cont_node(schema) ((schema)->mtype==MDS_MT_CONTAINER)
 #define is_list_node(schema) ((schema)->mtype==MDS_MT_LIST)
 #define is_leaf_node(schema) ((schema)->mtype==MDS_MT_LEAF)
+#define is_int_leaf(schema) ((schema)->mtype==MDS_MT_LEAF && (schema)->dtype==MDS_DT_INT)
+#define is_str_leaf(schema) ((schema)->mtype==MDS_MT_LEAF && (schema)->dtype==MDS_DT_STR)
 
 struct mds_node *mds_load_model(const char *model_str);
 void mds_free_model(struct mds_node *root);
