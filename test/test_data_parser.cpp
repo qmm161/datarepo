@@ -296,3 +296,29 @@ TEST_F(DataParser, test_should_dump_multi_layer_list)
     assert_equal_json(dump, TEST_DATA_JSON);
     free(dump);
 }
+
+TEST_F(DataParser, test_should_get_root_container_diff)
+{
+    const char *TEST_DATA_JSON_1 = R"({
+        "Data": {
+            "Name": "vc1000",
+            "Value": 100
+        }
+    })";
+    struct mdd_node *data1 = mdd_parse_data(schema, TEST_DATA_JSON_1);
+
+    const char *TEST_DATA_JSON_2 = R"({
+        "Data": {
+            "Name": "vc1000",
+            "Value": 200
+        }
+    })";
+    struct mdd_node *data2 = mdd_parse_data(schema, TEST_DATA_JSON_2);
+
+    mdd_diff *diff = mdd_get_diff(schema, data1, data2);
+    ASSERT_TRUE(NULL != diff);
+
+    ASSERT_EQ(1, diff->size);
+
+    mdd_free_diff(diff);
+}

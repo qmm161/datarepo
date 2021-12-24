@@ -23,6 +23,7 @@ set(mdm_srcs ${CMAKE_CURRENT_SOURCE_DIR}/src/model_parser.c
 ${CMAKE_CURRENT_SOURCE_DIR}/src/data_parser.c
 ${CMAKE_CURRENT_SOURCE_DIR}/src/log.c
 ${CMAKE_CURRENT_SOURCE_DIR}/src/data_repo.c
+${CMAKE_CURRENT_SOURCE_DIR}/src/common.c
 ) 
 
 add_library(mdm SHARED ${mdm_srcs})

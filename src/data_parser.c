@@ -462,3 +462,25 @@ int mdd_dump_data(struct mdd_node *root, char **json_str)
     free(buf);
     return -1;
 }
+
+void mdd_free_diff(mdd_diff *diff)
+{
+    CHECK_NULL(diff);
+
+    for(size_t i = 0; i < diff->size; i++) {
+        struct mdd_mo_diff *modiff = (struct mdd_mo_diff*)(diff->vec[i]);
+        vector_free(&modiff->diff_leafs);
+    }
+
+    vector_free(diff);
+    free(diff);
+}
+
+mdd_diff * mdd_get_diff(struct mds_node *schema, struct mdd_node *root1, struct mdd_node *root2)
+{
+    mdd_diff *diff = NULL;
+    struct mds_node *s = schema;
+
+
+    return diff;
+}
