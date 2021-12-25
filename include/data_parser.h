@@ -50,6 +50,12 @@ typedef enum {
     DF_ADD, DF_DELETE, DF_MODIFY
 } mdd_diff_type;
 
+struct mdd_leaf_diff
+{
+    struct mdd_leaf *edit_leaf;
+    struct mdd_leaf *run_leaf;
+};
+
 struct mdd_mo_diff
 {
     mdd_diff_type type;

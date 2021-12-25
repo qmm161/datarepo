@@ -15,9 +15,11 @@ int vector_init(struct mdd_vector *dvec, void *ele)
     CHECK_DO_RTN_VAL(!dvec->vec, LOG_WARN("No memory."), -1);
 
     dvec->capacity = DEFAULT_CAP;
-    dvec->vec[0] = ele;
-    dvec->size = 1;
-
+    dvec->size = 0;
+    if(ele) {
+        dvec->vec[0] = ele;
+        dvec->size = 1;
+    }
     return 0;
 }
 

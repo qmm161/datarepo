@@ -476,11 +476,169 @@ void mdd_free_diff(mdd_diff *diff)
     free(diff);
 }
 
-mdd_diff * mdd_get_diff(struct mds_node *schema, struct mdd_node *root1, struct mdd_node *root2)
+static int is_leaf_equal(struct mdd_leaf *leaf_run, struct mdd_leaf *leaf_edit)
 {
-    mdd_diff *diff = NULL;
-    struct mds_node *s = schema;
+    CHECK_NULL_RTN2(leaf_run, leaf_edit, 0);
+
+    if(is_int_leaf((struct mds_leaf*)(leaf_run->schema))) {
+        return leaf_run->value.intv == leaf_edit->value.intv;
+    } else if(is_str_leaf((struct mds_leaf*)(leaf_run->schema))) {
+        return !strcmp(leaf_run->value.strv, leaf_edit->value.strv);
+    } else {
+        LOG_WARN("leaf type no support yes");
+    }
+    return 0;
+}
+
+//TODO: maybe slow, sort mdd tree by schema will be better
+static struct mdd_node * find_child_leaf(struct mdd_node *mo, struct mds_node *leaf)
+{
+    struct mdd_node *child = mo->child;
+    while(child) {
+        if(child->schema == leaf) {
+            return child;
+        }
+
+        child = child->next;
+    } 
+    return NULL;
+}
+
+struct mdd_leaf_diff * build_leaf_diff(struct mdd_leaf *leaf_run, struct mdd_leaf *leaf_edit)
+{
+    struct mdd_leaf_diff *leafdiff = calloc(1, sizeof(struct mdd_leaf_diff));
+    CHECK_DO_RTN_VAL(!leafdiff, LOG_WARN("No memory"), NULL);
+
+    leafdiff->edit_leaf = leaf_edit;
+    leafdiff->run_leaf = leaf_run;
+    return leafdiff;
+}
+
+static struct mdd_mo_diff *init_mo_diff_modify(struct mdd_node *mo_run, struct mdd_node *mo_edit, struct mdd_leaf_diff *leafdiff)
+{
+    struct mdd_mo_diff *modiff = calloc(1, sizeof(struct mdd_mo_diff));
+    CHECK_DO_RTN_VAL(!modiff, LOG_WARN("No memory"), NULL);
+
+    modiff->type = DF_MODIFY;
+    modiff->run_data = mo_run;
+    modiff->edit_data = mo_edit;
+    int rt = vector_init(&modiff->diff_leafs, (void*) leafdiff);
+    if(rt) {
+        LOG_WARN("Init diff leaf vec failed");
+        free(modiff);
+        return NULL;
+    }
+    return modiff;
+}
+
+static int compare_leaf(struct mds_leaf *leaf, struct mdd_node *mo_run, struct mdd_node *mo_edit, struct mdd_mo_diff **modiff)
+{
+    int rt = -1;
+    struct mdd_leaf *leaf_run = (struct mdd_leaf*)find_child_leaf(mo_run, leaf);
+    struct mdd_leaf *leaf_edit = (struct mdd_leaf*)find_child_leaf(mo_edit, leaf);
+    if (!is_leaf_equal(leaf_run, leaf_edit)) {
+        struct mdd_leaf_diff *leafdiff = build_leaf_diff(leaf_run, leaf_edit);
+        CHECK_DO_RTN_VAL(!leafdiff, LOG_WARN("No memory"), -1);
+
+        if(*modiff == NULL) {
+            *modiff = init_mo_diff_modify(mo_run, mo_edit, leafdiff);
+            CHECK_DO_RTN_VAL(!modiff, LOG_WARN("Failed to init diff mo");free(leafdiff), -1);
+        } else {
+            rt = vector_add(&(*modiff)->diff_leafs, (void*)leafdiff);
+            CHECK_DO_RTN_VAL(!rt, LOG_WARN("Failed to add diff leaf");free(leafdiff), -1);
+        }
+    }
+    return 0;
+}
+
+static struct mdd_mo_diff * build_mo_diff_modify(struct mds_node *mos, struct mdd_node *mo_run, struct mdd_node *mo_edit)
+{
+    struct mdd_mo_diff *modiff = NULL;
+    struct mds_node *child = mos->child;
+    while(child) {
+        if(is_leaf_node(child)) {
+            int rt = compare_leaf((struct mds_leaf*) child, mo_run, mo_edit, &modiff);
+            if(rt) {
+                if(modiff) {
+                    vector_free(&(modiff->diff_leafs));
+                    free(modiff);
+                }
+                return rt;
+            }
+        } 
+        child = child->next;
+    }
+    return modiff;
+}
+
+static struct mdd_mo_diff * build_mo_diff_add(struct mdd_node *mo_edit)
+{
+    struct mdd_mo_diff *modiff = calloc(1, sizeof(struct mdd_mo_diff));
+    CHECK_DO_RTN_VAL(!modiff, LOG_WARN("No memory"), NULL);
+
+    modiff->type = DF_ADD;
+    modiff->run_data = NULL;
+    modiff->edit_data = mo_edit;
+    return modiff;
+}
+
+static struct mdd_mo_diff * build_mo_diff_del(struct mdd_node *mo_run)
+{
+    struct mdd_mo_diff *modiff = calloc(1, sizeof(struct mdd_mo_diff));
+    CHECK_DO_RTN_VAL(!modiff, LOG_WARN("No memory"), NULL);
+
+    modiff->type = DF_DELETE;
+    modiff->run_data = mo_run;
+    modiff->edit_data = NULL;
+    return modiff;
+}
+
+static int compare_self(struct mds_node *mos, struct mdd_node *mo_run, struct mdd_node *mo_edit, mdd_diff *diff)
+{
+    int rt = -1;
+    struct mdd_mo_diff *modiff = NULL;
+    if (!mo_run && !mo_edit) {
+        return 0;
+    } else if(!mo_run) {
+        modiff = build_mo_diff_add(mo_edit);
+        CHECK_NULL_RTN(!modiff, -1);
+    } else if(!mo_edit) {
+        modiff = build_mo_diff_del(mo_run);
+        CHECK_NULL_RTN(!modiff, -1);
+    } else {
+        modiff = build_mo_diff_modify(mos, mo_run, mo_edit);
+    }
+
+    if(modiff) {
+        rt = vector_add(diff, (void*)modiff);
+        CHECK_DO_RTN_VAL(!rt, LOG_WARN("Failed to add modiff"), -1);
+    }
+    return 0;
+}
+
+int compare_container(struct mds_node *mos, struct mdd_node *mo_run, struct mdd_node *mo_edit, mdd_diff *diff)
+{
+    return compare_self(mos, mo_run, mo_edit, diff);
+}
+
+mdd_diff * mdd_get_diff(struct mds_node *schema, struct mdd_node *root_run, struct mdd_node *root_edit)
+{
+    CHECK_NULL_RTN3(schema, root_run, root_edit, NULL);
+
+    mdd_diff *diff = (mdd_diff*)malloc(sizeof(mdd_diff));
+    int rt = vector_init(diff, NULL);
+    CHECK_DO_GOTO(rt, LOG_WARN("Failed to init vector"), EXCEPTION);
+
+    struct mds_node *mos = schema;
+    if(is_cont_node(mos)) {
+        rt = compare_container(mos, root_run, root_edit, diff);
+        CHECK_DO_GOTO(rt, LOG_WARN("Failed to compare mo:%s", mos->name), EXCEPTION);
+    }
 
 
     return diff;
+
+    EXCEPTION:
+    mdd_free_diff(diff);
+    return NULL;
 }
