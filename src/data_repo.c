@@ -84,8 +84,44 @@ int repo_get(const char *path, struct mdd_node **out)
     return (*out) ? 0 : -1;
 }
 
+static int write_file(const char *file_path, char *buffer)
+{
+    long size = 0;
+    size_t result;
+    FILE *fp = fopen (file_path, "w");
+    CHECK_DO_RTN_VAL(!fp, LOG_WARN("failed to load file: %s", file_path), -1);
+
+    result = fwrite (buffer, strlen(buffer), 1, fp);
+    fclose(fp);
+    if (result != size) {
+        LOG_WARN("failed to write data to file: %s", file_path);
+        return -1;
+    }
+    return 0;
+}
+
 int repo_edit(const char *edit_data)
 {
-    (void)edit_data;
-    return 0;
+    ctx.editing = mdd_parse_data(ctx.schema, edit_data);
+    CHECK_DO_RTN_VAL(!ctx.editing, LOG_WARN("Failed to parse edit data"), -1);
+    
+    mdd_diff *diff = mdd_get_diff(ctx.schema, ctx.running, ctx.editing);
+    if(diff) {  //TODO: register diff callback
+        mdd_dump_diff(diff);
+        mdd_free_diff(diff);
+    }
+
+    mdd_free_data(ctx.running);
+    ctx.running = ctx.editing;
+    ctx.editing = NULL;
+
+    char *buf = NULL;
+    int rt = mdd_dump_data(ctx.running, &buf);
+    CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to dump new data"), -1);
+
+    rt = write_file(ctx.data_file, buf);
+    free(buf);
+    CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to persist new data"), -1);
+
+    return rt;
 }

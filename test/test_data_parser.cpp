@@ -232,9 +232,9 @@ TEST_F(DataParser, test_should_build_multi_layer_list_2)
     assert_data_int_leaf("Id", 2, data->child->next->next->child->next->child);
     assert_data_int_leaf("IntLeaf", 220, data->child->next->next->child->next->child->next);
     assert_data_list("SubChildList", data->child->next->next->child->next->next);
-    // assert_data_int_leaf("Id", 3, data->child->next->next->child->next->next->child);
-    // assert_data_int_leaf("IntLeaf", 300, data->child->next->next->child->next->next->child->next);    
-    // assert_data_int_leaf("Value", 1, data->child->next->next->child->next->next);
+    assert_data_int_leaf("Id", 3, data->child->next->next->child->next->next->child);
+    assert_data_int_leaf("IntLeaf", 300, data->child->next->next->child->next->next->child->next);    
+    assert_data_int_leaf("Value", 1, data->child->next->next->child->next->next->next);
 }
 
 

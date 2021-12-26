@@ -450,7 +450,7 @@ int mdd_dump_data(struct mdd_node *root, char **json_str)
 {
     CHECK_DO_RTN_VAL(!root || !json_str, LOG_WARN("Null arg"), -1);
     
-    size_t size = 100*1024;
+    size_t size = 100*1024; //TODO: only support size under 100K
     size_t posi = 0;
     char *buf = calloc(1, size);
     CHECK_DO_RTN_VAL(!buf, LOG_WARN("No memory"), -1);
