@@ -8,6 +8,8 @@
 
 static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json, struct mdd_node *parent);
 static int dump_mdd_node(struct mdd_node *node, char **buf, size_t *size, size_t *posi, struct mdd_node **next);
+static int compare_list(struct mds_node *lists, struct mdd_node *mo_run_parent, struct mdd_node *mo_edit_parent, mdd_diff *diff);
+static int compare_container(struct mds_node *mos, struct mdd_node *mo_run, struct mdd_node *mo_edit, mdd_diff *diff);
 
 static void mdd_free_self_node(struct mdd_node *node)
 {
@@ -40,6 +42,15 @@ void mdd_free_data(struct mdd_node *root)
     mdd_free_self_node(root);
 }
 
+static struct mdd_node *get_last_child(struct mdd_node *node)
+{
+    struct mdd_node *n = node;
+    while(n->next) {
+        n = n->next;
+    }
+    return n;
+}
+
 static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *data_json, struct mdd_node *parent)
 {
     CHECK_DO_RTN_VAL(!cJSON_IsObject(data_json), LOG_WARN("invalid container data"), NULL);
@@ -65,7 +76,7 @@ static struct mdd_node *build_container_node(struct mds_node *schema, cJSON *dat
             prev->next = node_child;
             node_child->prev = prev;
         }
-        prev = node_child;
+        prev = get_last_child(node_child);
 
         data_child = data_child->next;
     }
@@ -80,7 +91,7 @@ static struct mdd_node *build_list_node(struct mds_node *schema, cJSON *data_jso
 {
     CHECK_DO_RTN_VAL(!cJSON_IsArray(data_json), LOG_WARN("invalid list data: %s", schema->name), NULL);
 
-    LOG_INFO("mdd--trye build list: %s-%s", schema->name, data_json->string);
+    LOG_INFO("mdd--try build list: %s-%s", schema->name, data_json->string);
     struct mdd_node *first = NULL;
     struct mdd_node *prev = NULL;
     struct mdd_node *node = NULL;
@@ -536,6 +547,8 @@ static int compare_leaf(struct mds_leaf *leaf, struct mdd_node *mo_run, struct m
     int rt = -1;
     struct mdd_leaf *leaf_run = (struct mdd_leaf*)find_child_node(mo_run, leaf);
     struct mdd_leaf *leaf_edit = (struct mdd_leaf*)find_child_node(mo_edit, leaf);
+    CHECK_DO_RTN_VAL(!leaf_run && !leaf_edit, LOG_INFO("leaf %s not exit for both", leaf->name), 0);
+
     if (!is_leaf_equal(leaf_run, leaf_edit)) {
         struct mdd_leaf_diff *leafdiff = build_leaf_diff(leaf_run, leaf_edit);
         CHECK_DO_RTN_VAL(!leafdiff, LOG_WARN("No memory"), -1);
@@ -616,6 +629,73 @@ static int compare_self(struct mds_node *mos, struct mdd_node *mo_run, struct md
     return 0;
 }
 
+static int get_list_key(struct mdd_node *list, const char *key)
+{
+    struct mdd_node *child = list->child;
+    while(child) {
+        if(!strcmp(child->schema->name, key)) {
+            CHECK_DO_RTN_VAL(!is_leaf(child->schema->mtype) || !is_int_leaf((struct mds_leaf*)(child->schema)), LOG_WARN("Invalid key:%s", key), -1);
+            return ((struct mdd_leaf*)child)->value.intv;
+        }
+        child = child->next;
+    }
+    return -1;
+}
+
+static struct mdd_node * find_child_list(struct mdd_node *parent, struct mds_node *lists, int targetKey)
+{
+    struct mdd_node *list_child = find_child_node(parent, lists);
+    while(list_child && list_child->schema==lists) {
+        int key = get_list_key(list_child, "Id");
+        if(key == targetKey) {
+            return list_child;
+        }
+        list_child = list_child->next;
+    }
+    return NULL;
+}
+
+static int compare_list(struct mds_node *lists, struct mdd_node *mo_run_parent, struct mdd_node *mo_edit_parent, mdd_diff *diff)
+{
+    int rt = -1;
+    int key = -1;
+    struct mdd_mo_diff *modiff = NULL;
+    struct mdd_node *list_run = find_child_node(mo_run_parent, lists);
+    while(list_run != NULL && list_run->schema==lists) {
+        modiff = NULL;
+        key = get_list_key(list_run, "Id");
+        CHECK_DO_RTN_VAL(-1 == key, LOG_WARN("Failed to get list key"), -1);
+
+        struct mdd_node *find_edit = find_child_list(mo_edit_parent, lists, key);
+        rt = compare_container(lists, list_run, find_edit, diff);
+        CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to add modiff"), -1);
+
+        list_run = list_run->next;
+    }
+
+    struct mdd_node *list_edit = find_child_node(mo_edit_parent, lists);  
+    while(list_edit != NULL && list_edit->schema==lists) {
+        key = get_list_key(list_edit, "Id");
+        CHECK_DO_RTN_VAL(-1 == key, LOG_WARN("Failed to get list key"), -1);
+        LOG_INFO("Find list inst:%s[%d]", list_edit->schema->name, key);
+
+        struct mdd_node *find_run = find_child_list(mo_run_parent, lists, key);
+        if(!find_run) {
+            LOG_INFO("Find add list inst:%s[%d]", list_edit->schema->name, key);
+            rt = compare_container(lists, find_run, list_edit, diff);
+            CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to add modiff"), -1);
+        }
+
+        list_edit = list_edit->next;
+        if (list_edit) {
+            LOG_INFO("Find next list inst:%s[%d]", list_edit->schema->name, key);
+        } else {
+            LOG_INFO("All list inst over");
+        }
+    }
+    return 0;
+}
+
 static int compare_container(struct mds_node *mos, struct mdd_node *mo_run, struct mdd_node *mo_edit, mdd_diff *diff)
 {
     int rt = compare_self(mos, mo_run, mo_edit, diff);
@@ -629,7 +709,11 @@ static int compare_container(struct mds_node *mos, struct mdd_node *mo_run, stru
 
             rt = compare_container(childs, child_run, child_edit, diff);
             CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to get diff for mo:%s", childs->name), rt);
+        } else if(is_list_node(childs)) {
+            rt = compare_list(childs, mo_run, mo_edit, diff);
+            CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to get diff for list mo:%s", childs->name), rt);
         }
+
         childs = childs->next;
     }
     return 0;
@@ -649,10 +733,37 @@ mdd_diff * mdd_get_diff(struct mds_node *schema, struct mdd_node *root_run, stru
         CHECK_DO_GOTO(rt, LOG_WARN("Failed to compare mo:%s", mos->name), EXCEPTION);
     }
 
-
     return diff;
 
     EXCEPTION:
     mdd_free_diff(diff);
     return NULL;
+}
+
+static const char* get_diff_mo_name(struct mdd_mo_diff* modiff)
+{
+    struct mdd_mo * mo = modiff->edit_data ? modiff->edit_data : modiff->run_data;
+    return mo->schema->name;
+} 
+
+static const char* get_diff_type(struct mdd_mo_diff* modiff)
+{
+    switch(modiff->type) {
+        case DF_DELETE:
+            return "DELETE";
+        case DF_MODIFY:
+            return "MODIFY";
+        case DF_ADD:
+            return "ADD";
+        default :
+            return "UNKNOWN";
+    }
+}
+
+void mdd_dump_diff(mdd_diff *diff)
+{
+    for(size_t i = 0; i < diff->size; i++) {
+        struct mdd_mo_diff* modiff = (struct mdd_mo_diff*)diff->vec[i];
+        LOG_INFO("modiff:%s - %s", get_diff_type(modiff), get_diff_mo_name(modiff));
+    }
 }

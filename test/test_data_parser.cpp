@@ -43,6 +43,12 @@ const char *TEST_MODEL_JSON = R"({
                     "dtype": "int"
                 }
             },
+            "Value": {
+                "@attr": {
+                    "mtype": "leaf",
+                    "dtype": "int"
+                }
+            },
             "SubChildList": {
                 "@attr": {
                     "mtype": "list"
@@ -196,6 +202,39 @@ TEST_F(DataParser, test_should_build_multi_layer_list)
     assert_data_list("SubChildList", data->child->next->child->next->next);
     assert_data_list("ChildList", data->child->next->next);
     assert_data_int_leaf("Id", 2, data->child->next->next->child);
+}
+
+TEST_F(DataParser, test_should_build_multi_layer_list_2)
+{
+    const char *TEST_DATA_JSON = R"({
+        "Data": {
+            "Value": 100,
+            "Name": "vc1000",
+            "ChildList": [
+                {
+                    "Id": 1, 
+                    "SubChildList":[
+                        {"Id": 2, "IntLeaf":220},
+                        {"Id": 3, "IntLeaf":300}
+                    ],
+                    "Value":1
+                }
+            ]
+        }
+    })";
+    data = mdd_parse_data(schema, TEST_DATA_JSON);
+    assert_data_container("Data", data);
+    assert_data_int_leaf("Value", 100, data->child);
+    assert_data_string_leaf("Name", "vc1000", data->child->next);
+    assert_data_list("ChildList", data->child->next->next);
+    assert_data_int_leaf("Id", 1, data->child->next->next->child);
+    assert_data_list("SubChildList", data->child->next->next->child->next);
+    assert_data_int_leaf("Id", 2, data->child->next->next->child->next->child);
+    assert_data_int_leaf("IntLeaf", 220, data->child->next->next->child->next->child->next);
+    assert_data_list("SubChildList", data->child->next->next->child->next->next);
+    // assert_data_int_leaf("Id", 3, data->child->next->next->child->next->next->child);
+    // assert_data_int_leaf("IntLeaf", 300, data->child->next->next->child->next->next->child->next);    
+    // assert_data_int_leaf("Value", 1, data->child->next->next->child->next->next);
 }
 
 
@@ -431,6 +470,68 @@ TEST_F(DataParser, test_should_get_multi_layer_diff2)
     modiff = (struct mdd_mo_diff*)diff->vec[1];
     ASSERT_EQ(DF_DELETE, modiff->type);
     ASSERT_EQ(0, modiff->diff_leafs.size);
+
+    mdd_free_diff(diff);
+    
+    mdd_free_data(data1);
+    mdd_free_data(data2);
+}
+
+TEST_F(DataParser, test_should_get_multi_layer_diff_with_list)
+{
+    const char *TEST_DATA_JSON_1 = R"({
+        "Data": {
+            "Value": 100,
+            "Name": "vc1000",
+            "ChildList": [
+                {
+                    "Id": 1, 
+                    "Value":1,
+                    "SubChildList":[
+                        {"Id": 1, "IntLeaf":100},
+                        {"Id": 2, "IntLeaf":200}
+                    ]
+                },
+                {"Id": 2}
+            ]
+        }
+    })";
+    struct mdd_node *data1 = mdd_parse_data(schema, TEST_DATA_JSON_1);
+    ASSERT_TRUE(NULL != data1);
+
+    printf("begin parse test data2\n");
+
+    const char *TEST_DATA_JSON_2 = R"({
+        "Data": {
+            "Value": 100,
+            "Name": "vc1000",
+            "ChildList": [
+                {
+                    "Id": 1, 
+                    "SubChildList":[
+                        {"Id": 2, "IntLeaf":220},
+                        {"Id": 3, "IntLeaf":300}
+                    ],
+                    "Value":1
+                },
+                {
+                    "Id": 2,
+                    "Value":2,
+                    "SubChildList":[
+                        {"Id": 1, "IntLeaf":100},
+                        {"Id": 2, "IntLeaf":200}
+                    ]
+                }
+            ]
+        }
+    })";
+    struct mdd_node *data2 = mdd_parse_data(schema, TEST_DATA_JSON_2);
+    ASSERT_TRUE(NULL != data2);
+
+    mdd_diff *diff = mdd_get_diff(schema, data1, data2);
+    ASSERT_TRUE(NULL != diff);
+    mdd_dump_diff(diff);
+    ASSERT_EQ(6, diff->size);
 
     mdd_free_diff(diff);
     

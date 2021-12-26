@@ -73,6 +73,7 @@ struct mdd_node * mdd_get_data(struct mdd_node *root, const char *path);
 int mdd_dump_data(struct mdd_node *root, char **json_str);
 void mdd_free_diff(mdd_diff *diff);
 mdd_diff * mdd_get_diff(struct mds_node *schema, struct mdd_node *root1, struct mdd_node *root2);
+void mdd_dump_diff(mdd_diff *diff);
 
 #ifdef __cplusplus
 }

@@ -43,8 +43,8 @@ public:
 
     void assert_data_list(const char *name, struct mdd_node *node)
     {
-        ASSERT_EQ(MDS_MT_LIST, node->schema->mtype);
-        ASSERT_STREQ(name, node->schema->name);               
+        ASSERT_EQ(MDS_MT_LIST, node->schema->mtype) << "name:" << name << " vs " << node->schema->name;
+        ASSERT_STREQ(name, node->schema->name) << "name:" << name << " vs " << node->schema->name;               
     }
 
     void assert_data_string_leaf(const char *name, const char *value, struct mdd_node *node)
