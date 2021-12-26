@@ -324,9 +324,12 @@ TEST_F(DataParser, test_should_get_root_container_diff)
     ASSERT_EQ(1, modiff->diff_leafs.size);
 
     mdd_free_diff(diff);
+
+    mdd_free_data(data1);
+    mdd_free_data(data2);
 }
 
-TEST_F(DataParser, test_should_get_root_container_diff_2)
+TEST_F(DataParser, test_should_get_root_container_diff_2_leaf)
 {
     const char *TEST_DATA_JSON_1 = R"({
         "Data": {
@@ -353,4 +356,46 @@ TEST_F(DataParser, test_should_get_root_container_diff_2)
     ASSERT_EQ(2, modiff->diff_leafs.size);
 
     mdd_free_diff(diff);
+    
+    mdd_free_data(data1);
+    mdd_free_data(data2);
+}
+
+TEST_F(DataParser, test_should_get_multi_layer_diff)
+{
+    const char *TEST_DATA_JSON_1 = R"({
+        "Data": {
+            "Value": 100,
+            "Name": "vc1000"
+        }
+    })";
+    struct mdd_node *data1 = mdd_parse_data(schema, TEST_DATA_JSON_1);
+
+    const char *TEST_DATA_JSON_2 = R"({
+        "Data": {
+            "Value": 200,
+            "ChildData": {
+                "Id":200
+            },
+            "Name": "vc1200"
+        }
+    })";
+    struct mdd_node *data2 = mdd_parse_data(schema, TEST_DATA_JSON_2);
+
+    mdd_diff *diff = mdd_get_diff(schema, data1, data2);
+    ASSERT_TRUE(NULL != diff);
+    ASSERT_EQ(2, diff->size);
+
+    struct mdd_mo_diff* modiff = (struct mdd_mo_diff*)diff->vec[0];
+    ASSERT_EQ(DF_MODIFY, modiff->type);
+    ASSERT_EQ(2, modiff->diff_leafs.size);
+
+    modiff = (struct mdd_mo_diff*)diff->vec[1];
+    ASSERT_EQ(DF_ADD, modiff->type);
+    ASSERT_EQ(0, modiff->diff_leafs.size);
+
+    mdd_free_diff(diff);
+    
+    mdd_free_data(data1);
+    mdd_free_data(data2);
 }

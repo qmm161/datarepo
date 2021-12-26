@@ -491,11 +491,11 @@ static int is_leaf_equal(struct mdd_leaf *leaf_run, struct mdd_leaf *leaf_edit)
 }
 
 //TODO: maybe slow, sort mdd tree by schema will be better
-static struct mdd_node * find_child_leaf(struct mdd_node *mo, struct mds_node *leaf)
+static struct mdd_node * find_child_node(struct mdd_node *mo, struct mds_node *child_schema)
 {
     struct mdd_node *child = mo->child;
     while(child) {
-        if(child->schema == leaf) {
+        if(child->schema == child_schema) {
             return child;
         }
 
@@ -534,8 +534,8 @@ static struct mdd_mo_diff *init_mo_diff_modify(struct mdd_node *mo_run, struct m
 static int compare_leaf(struct mds_leaf *leaf, struct mdd_node *mo_run, struct mdd_node *mo_edit, struct mdd_mo_diff **modiff)
 {
     int rt = -1;
-    struct mdd_leaf *leaf_run = (struct mdd_leaf*)find_child_leaf(mo_run, leaf);
-    struct mdd_leaf *leaf_edit = (struct mdd_leaf*)find_child_leaf(mo_edit, leaf);
+    struct mdd_leaf *leaf_run = (struct mdd_leaf*)find_child_node(mo_run, leaf);
+    struct mdd_leaf *leaf_edit = (struct mdd_leaf*)find_child_node(mo_edit, leaf);
     if (!is_leaf_equal(leaf_run, leaf_edit)) {
         struct mdd_leaf_diff *leafdiff = build_leaf_diff(leaf_run, leaf_edit);
         CHECK_DO_RTN_VAL(!leafdiff, LOG_WARN("No memory"), -1);
@@ -601,10 +601,10 @@ static int compare_self(struct mds_node *mos, struct mdd_node *mo_run, struct md
         return 0;
     } else if(!mo_run) {
         modiff = build_mo_diff_add(mo_edit);
-        CHECK_NULL_RTN(!modiff, -1);
+        CHECK_DO_RTN_VAL(!modiff, LOG_WARN("Failed to build add diff for: %s", mos->name), -1);
     } else if(!mo_edit) {
         modiff = build_mo_diff_del(mo_run);
-        CHECK_NULL_RTN(!modiff, -1);
+        CHECK_DO_RTN_VAL(!modiff, LOG_WARN("Failed to build del diff for: %s", mos->name), -1);
     } else {
         modiff = build_mo_diff_modify(mos, mo_run, mo_edit);
     }
@@ -616,9 +616,23 @@ static int compare_self(struct mds_node *mos, struct mdd_node *mo_run, struct md
     return 0;
 }
 
-int compare_container(struct mds_node *mos, struct mdd_node *mo_run, struct mdd_node *mo_edit, mdd_diff *diff)
+static int compare_container(struct mds_node *mos, struct mdd_node *mo_run, struct mdd_node *mo_edit, mdd_diff *diff)
 {
-    return compare_self(mos, mo_run, mo_edit, diff);
+    int rt = compare_self(mos, mo_run, mo_edit, diff);
+    CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to get diff for mo:%s", mos->name), rt);
+
+    struct mds_node *childs = mos->child;
+    while(childs) {
+        if(is_cont_node(childs)) {
+            struct mdd_node *child_run = find_child_node(mo_run, childs);
+            struct mdd_node *child_edit = find_child_node(mo_edit, childs);
+
+            rt = compare_container(childs, child_run, child_edit, diff);
+            CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to get diff for mo:%s", childs->name), rt);
+        }
+        childs = childs->next;
+    }
+    return 0;
 }
 
 mdd_diff * mdd_get_diff(struct mds_node *schema, struct mdd_node *root_run, struct mdd_node *root_edit)
