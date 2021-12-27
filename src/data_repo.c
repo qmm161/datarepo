@@ -84,6 +84,7 @@ int repo_get(const char *path, struct mdd_node **out)
     return (*out) ? 0 : -1;
 }
 
+//TODO: consider file broken 
 static int write_file(const char *file_path, char *buffer)
 {
     long size = 0;
