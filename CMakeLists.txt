@@ -36,7 +36,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/src/common.c
 add_library(mdm SHARED ${mdm_srcs})
 target_link_libraries(mdm cjson)
 install(TARGETS mdm LIBRARY DESTINATION lib)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include/datapepo FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include/mdm FILES_MATCHING PATTERN "*.h")
 
 add_executable(model main.c)
 target_link_libraries(model mdm cjson)
