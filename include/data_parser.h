@@ -1,6 +1,7 @@
 #ifndef __DATA_PARSER_H
 #define __DATA_PARSER_H
 
+#include "cjson/cJSON.h"
 #include "model_parser.h"
 #include "common.h"
 
@@ -67,6 +68,7 @@ struct mdd_mo_diff
 
 typedef struct mdd_vector mdd_diff;
 
+struct mdd_node *mdd_parse_json(struct mds_node *schema, const cJSON *data_json);
 struct mdd_node *mdd_parse_data(struct mds_node *schema, const char *data_json);
 void mdd_free_data(struct mdd_node *root);
 struct mdd_node * mdd_get_data(struct mdd_node *root, const char *path);

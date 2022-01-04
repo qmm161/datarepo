@@ -101,11 +101,8 @@ static int write_file(const char *file_path, char *buffer)
     return 0;
 }
 
-int repo_edit(const char *edit_data)
+static int deal_edit()
 {
-    ctx.editing = mdd_parse_data(ctx.schema, edit_data);
-    CHECK_DO_RTN_VAL(!ctx.editing, LOG_WARN("Failed to parse edit data"), -1);
-    
     mdd_diff *diff = mdd_get_diff(ctx.schema, ctx.running, ctx.editing);
     if(diff) {  //TODO: register diff callback
         mdd_dump_diff(diff);
@@ -125,4 +122,20 @@ int repo_edit(const char *edit_data)
     CHECK_DO_RTN_VAL(rt, LOG_WARN("Failed to persist new data"), -1);
 
     return rt;
+}
+
+int repo_edit_json(const cJSON *edit_data)
+{
+    ctx.editing = mdd_parse_json(ctx.schema, edit_data);
+    CHECK_DO_RTN_VAL(!ctx.editing, LOG_WARN("Failed to parse edit data"), -1);
+
+    return deal_edit();
+}
+
+int repo_edit(const char *edit_data)
+{
+    ctx.editing = mdd_parse_data(ctx.schema, edit_data);
+    CHECK_DO_RTN_VAL(!ctx.editing, LOG_WARN("Failed to parse edit data"), -1);
+    
+    return deal_edit();
 }

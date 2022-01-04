@@ -150,13 +150,20 @@ static struct mdd_node *build_mdd_node(struct mds_node *schema, cJSON *data_json
     return node;
 }
 
+struct mdd_node *mdd_parse_json(struct mds_node *schema, const cJSON *data_root)
+{
+    CHECK_RTN_VAL(!data_root && !data_root->child, NULL);
+
+    return build_container_node(schema, data_root->child, NULL);
+}
+
 struct mdd_node *mdd_parse_data(struct mds_node *schema, const char *data_json)
 {
     struct mdd_node *data_root = NULL;
     cJSON *json_root = cJSON_Parse(data_json);
-    CHECK_RTN_VAL(!json_root || !json_root->child, NULL);
+    CHECK_RTN_VAL(!json_root, NULL);
 
-    data_root = build_container_node(schema, json_root->child, NULL);
+    data_root = mdd_parse_json(schema, json_root);
     
     cJSON_Delete(json_root);
     return data_root;
