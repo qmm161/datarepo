@@ -5,8 +5,7 @@
 using namespace std;
 using namespace testing;
 
-
-class DataRepoTest : public ModelTestUtil, public Test
+class DataRepoTest: public ModelTestUtil, public Test
 {
 public:
     void SetUp()
@@ -20,9 +19,7 @@ public:
         repo_free();
     }
 
-
 };
-
 
 TEST_F(DataRepoTest, should_get_top_node_succ)
 {
@@ -79,7 +76,4 @@ TEST_F(DataRepoTest, should_get_child_list_child_list_by_key_succ)
     ASSERT_EQ(0, rlt);
     assert_data_string_leaf("StrLeaf", "222", out);
 }
-
-
-
 

@@ -5,7 +5,7 @@
 using namespace std;
 using namespace testing;
 
-class CommonTest : public Test
+class CommonTest: public Test
 {
 public:
     CommonTest() = default;
@@ -34,7 +34,6 @@ TEST_F(CommonTest, should_add_element_to_vec_and_do_loop_and_free)
     struct TestData t10 = {10};
     struct TestData t11 = {11};
     struct TestData t12 = {12};
-
 
     int rt = vector_init(&dvec, (void*)&t1);
     ASSERT_EQ(0, rt);

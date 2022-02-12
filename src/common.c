@@ -16,7 +16,7 @@ int vector_init(struct mdd_vector *dvec, void *ele)
 
     dvec->capacity = DEFAULT_CAP;
     dvec->size = 0;
-    if(ele) {
+    if (ele) {
         dvec->vec[0] = ele;
         dvec->size = 1;
     }
@@ -27,7 +27,7 @@ int vector_add(struct mdd_vector *dvec, void *ele)
 {
     CHECK_NULL_RTN(dvec, -1);
 
-    if(dvec->capacity == dvec->size) {
+    if (dvec->capacity == dvec->size) {
         size_t newcap = dvec->capacity * 2;
         void *newp = realloc(dvec->vec, newcap);
         CHECK_DO_RTN_VAL(!newp, LOG_WARN("No memory."), -1);

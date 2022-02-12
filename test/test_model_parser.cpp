@@ -5,7 +5,7 @@
 using namespace std;
 using namespace testing;
 
-class ModelTest : public Test, public ModelTestUtil
+class ModelTest: public Test, public ModelTestUtil
 {
 public:
     void SetUp()
@@ -126,7 +126,6 @@ TEST_F(ModelTest, should_load_multi_mo_and_multi_leaf_succ)
     assert_model_list("ChildData", root->child->next->next);
     assert_model_leaf("Id", MDS_DT_INT, root->child->next->next->child);
 }
-
 
 TEST_F(ModelTest, should_load_complicated_schema_succ)
 {

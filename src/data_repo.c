@@ -19,28 +19,29 @@ struct repo_ctx
 
 static struct repo_ctx ctx;
 
-static char *load_file(const char *file_path)
+static char* load_file(const char *file_path)
 {
     long size = 0;
     char *buffer;
     size_t result;
-    FILE *fp = fopen (file_path, "r");
+    FILE *fp = fopen(file_path, "r");
     CHECK_DO_RTN_VAL(!fp, LOG_WARN("failed to load file: %s", file_path), NULL);
 
     fseek(fp, 0, SEEK_END);
     size = ftell(fp);
     rewind(fp);
 
-    buffer = (char*) calloc(1, sizeof(char)*size);
+    buffer = (char*) calloc(1, sizeof(char) * size);
     CHECK_DO_RTN_VAL(!buffer, fclose(fp), NULL);
 
-    result = fread (buffer, 1, size, fp);
+    result = fread(buffer, 1, size, fp);
     if (result != size) {
         LOG_WARN("failed to read data from file: %s", file_path);
         fclose(fp);
         free(buffer);
         return NULL;
     }
+    LOG_INFO("load file:%d-%s", size, buffer);
     fclose(fp);
     return buffer;
 }
@@ -56,7 +57,7 @@ int repo_init(const char *schema_path, const char *data_path)
     ctx.schema = mds_load_model(schema_buff);
     free(schema_buff);
     schema_buff = NULL;
-    
+
     char *data_buff = load_file(data_path);
     CHECK_DO_RTN_VAL(!data_buff, LOG_WARN("failed to load data"), -1);
     ctx.running = mdd_parse_data(ctx.schema, data_buff);
@@ -89,10 +90,10 @@ static int write_file(const char *file_path, char *buffer)
 {
     long size = 0;
     size_t result;
-    FILE *fp = fopen (file_path, "w");
+    FILE *fp = fopen(file_path, "w");
     CHECK_DO_RTN_VAL(!fp, LOG_WARN("failed to load file: %s", file_path), -1);
 
-    result = fwrite (buffer, strlen(buffer), 1, fp);
+    result = fwrite(buffer, strlen(buffer), 1, fp);
     fclose(fp);
     if (result != size) {
         LOG_WARN("failed to write data to file: %s", file_path);
@@ -104,7 +105,7 @@ static int write_file(const char *file_path, char *buffer)
 static int deal_edit()
 {
     mdd_diff *diff = mdd_get_diff(ctx.schema, ctx.running, ctx.editing);
-    if(diff) {  //TODO: register diff callback
+    if (diff) {//TODO: register diff callback
         mdd_dump_diff(diff);
         mdd_free_diff(diff);
     }
@@ -136,6 +137,6 @@ int repo_edit(const char *edit_data)
 {
     ctx.editing = mdd_parse_data(ctx.schema, edit_data);
     CHECK_DO_RTN_VAL(!ctx.editing, LOG_WARN("Failed to parse edit data"), -1);
-    
+
     return deal_edit();
 }

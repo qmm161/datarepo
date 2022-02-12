@@ -5,7 +5,8 @@
 
 using namespace testing;
 
-const char *TEST_MODEL_JSON = R"({
+const char *TEST_MODEL_JSON =
+        R"({
     "Data": {
         "@attr": {
             "mtype": "container"
@@ -70,7 +71,7 @@ const char *TEST_MODEL_JSON = R"({
     }
 })";
 
-class DataParser : public Test, public ModelTestUtil
+class DataParser: public Test, public ModelTestUtil
 {
 public:
     void SetUp()
@@ -152,7 +153,7 @@ TEST_F(DataParser, test_should_build_multi_layer_mo_disorder)
     assert_data_container("Data", data);
     assert_data_container("ChildData", data->child);
     assert_data_int_leaf("Id", 100, data->child->child);
-    assert_data_int_leaf("Value", 100, data->child->next);    
+    assert_data_int_leaf("Value", 100, data->child->next);
     assert_data_string_leaf("Name", "vc1000", data->child->next->next);
 }
 
@@ -233,10 +234,9 @@ TEST_F(DataParser, test_should_build_multi_layer_list_2)
     assert_data_int_leaf("IntLeaf", 220, data->child->next->next->child->next->child->next);
     assert_data_list("SubChildList", data->child->next->next->child->next->next);
     assert_data_int_leaf("Id", 3, data->child->next->next->child->next->next->child);
-    assert_data_int_leaf("IntLeaf", 300, data->child->next->next->child->next->next->child->next);    
+    assert_data_int_leaf("IntLeaf", 300, data->child->next->next->child->next->next->child->next);
     assert_data_int_leaf("Value", 1, data->child->next->next->child->next->next->next);
 }
-
 
 TEST_F(DataParser, test_should_dump_root_container_as_json)
 {
@@ -395,7 +395,7 @@ TEST_F(DataParser, test_should_get_root_container_diff_2_leaf)
     ASSERT_EQ(2, modiff->diff_leafs.size);
 
     mdd_free_diff(diff);
-    
+
     mdd_free_data(data1);
     mdd_free_data(data2);
 }
@@ -434,7 +434,7 @@ TEST_F(DataParser, test_should_get_multi_layer_diff)
     ASSERT_EQ(0, modiff->diff_leafs.size);
 
     mdd_free_diff(diff);
-    
+
     mdd_free_data(data1);
     mdd_free_data(data2);
 }
@@ -472,7 +472,7 @@ TEST_F(DataParser, test_should_get_multi_layer_diff2)
     ASSERT_EQ(0, modiff->diff_leafs.size);
 
     mdd_free_diff(diff);
-    
+
     mdd_free_data(data1);
     mdd_free_data(data2);
 }
@@ -534,11 +534,10 @@ TEST_F(DataParser, test_should_get_multi_layer_diff_with_list)
     ASSERT_EQ(6, diff->size);
 
     mdd_free_diff(diff);
-    
+
     mdd_free_data(data1);
     mdd_free_data(data2);
 }
-
 
 TEST_F(DataParser, test_should_get_root_container_diff_when_edit_json)
 {
@@ -555,8 +554,8 @@ TEST_F(DataParser, test_should_get_root_container_diff_when_edit_json)
     cJSON *request = cJSON_Parse(TEST_DATA_JSON_1);
     cJSON *child = request->child;
     cJSON *jsondata1 = NULL;
-    while (child){
-        if (!strcmp(child->string, "msg_body")){
+    while (child) {
+        if (!strcmp(child->string, "msg_body")) {
             jsondata1 = child;
             cJSON_DetachItemViaPointer(request, child);
             break;
