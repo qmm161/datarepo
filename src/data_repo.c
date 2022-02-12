@@ -31,9 +31,10 @@ static char* load_file(const char *file_path)
     size = ftell(fp);
     rewind(fp);
 
-    buffer = (char*) calloc(1, sizeof(char) * size);
+    buffer = (char*) calloc(1, sizeof(char) * size + 1);
     CHECK_DO_RTN_VAL(!buffer, fclose(fp), NULL);
 
+    memset(buffer, 0, sizeof(char) * size + 1);
     result = fread(buffer, 1, size, fp);
     if (result != size) {
         LOG_WARN("failed to read data from file: %s", file_path);
@@ -41,7 +42,7 @@ static char* load_file(const char *file_path)
         free(buffer);
         return NULL;
     }
-    LOG_INFO("load file:%d-%s", size, buffer);
+    LOG_INFO("load file:%d-%d-%s", size, strlen(buffer), buffer);
     fclose(fp);
     return buffer;
 }
