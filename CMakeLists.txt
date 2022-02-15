@@ -7,6 +7,9 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE debug)
 endif()
 
+set(CMAKE_C_COMPILER "/Library/Developer/CommandLineTools/usr/bin/gcc")
+set(CMAKE_CXX_COMPILER "/Library/Developer/CommandLineTools/usr/bin/g++")
+
 set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_C_FLAGS_DEBUG   "-g -O0 -DDEBUG")
