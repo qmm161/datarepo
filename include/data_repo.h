@@ -1,7 +1,7 @@
 #ifndef _DATA_REPO_
 #define _DATA_REPO_
 
-#include "cjson/cJSON.h"
+#include <cjson/cJSON.h>
 #include "data_parser.h"
 
 int repo_init(const char *schema_path, const char *data_path);

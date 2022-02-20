@@ -1,9 +1,11 @@
 #ifndef __DATA_PARSER_H
 #define __DATA_PARSER_H
 
-#include "cjson/cJSON.h"
+#include <cjson/cJSON.h>
 #include "model_parser.h"
 #include "common.h"
+
+typedef struct mdd_vector mdd_diff;
 
 typedef union {
     long long intv;
@@ -53,10 +55,8 @@ struct mdd_mo_diff{
     struct mdd_mo *edit_data;
     struct mdd_mo *run_data;
 
-    struct mdd_vector diff_leafs;
+    mdd_diff diff_leafs;
 };
-
-typedef struct mdd_vector mdd_diff;
 
 struct mdd_node* mdd_parse_json(struct mds_node *schema, const cJSON *data_json);
 struct mdd_node* mdd_parse_data(struct mds_node *schema, const char *data_json);

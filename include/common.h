@@ -1,5 +1,5 @@
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef __MDM_COMMON_H_
+#define __MDM_COMMON_H_
 
 #include <stddef.h>
 
