@@ -1,6 +1,9 @@
 #include "gtest/gtest.h"
+
+extern "C" {
 #include "model_parser.h"
 #include "model_test_util.h"
+}
 
 using namespace std;
 using namespace testing;

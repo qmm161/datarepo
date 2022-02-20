@@ -4,8 +4,10 @@
 #include <gtest/gtest.h>
 #include "cjson/cJSON.h"
 
+extern "C" {
 #include "data_parser.h"
 #include "model_parser.h"
+}
 
 class ModelTestUtil
 {

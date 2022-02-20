@@ -1,7 +1,9 @@
 #include "gtest/gtest.h"
-#include "data_parser.h"
 
+extern "C" {
+#include "data_parser.h"
 #include "model_test_util.h"
+}
 
 using namespace testing;
 

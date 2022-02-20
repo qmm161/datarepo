@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
+
+extern "C" {
 #include "model_test_util.h"
 #include "data_repo.h"
+}
 
 using namespace std;
 using namespace testing;
@@ -18,7 +21,6 @@ public:
     {
         repo_free();
     }
-
 };
 
 TEST_F(DataRepoTest, should_get_top_node_succ)
