@@ -89,14 +89,15 @@ int repo_get(const char *path, struct mdd_node **out)
 //TODO: consider file broken 
 static int write_file(const char *file_path, char *buffer)
 {
-    long size = 0;
-    size_t result;
+    size_t len = strlen(buffer);
+    size_t cnt = 0;
     FILE *fp = fopen(file_path, "w");
     CHECK_DO_RTN_VAL(!fp, LOG_WARN("failed to load file: %s", file_path), -1);
 
-    result = fwrite(buffer, strlen(buffer), 1, fp);
+    cnt = fwrite(buffer, len, 1, fp);
+    fflush(fp);
     fclose(fp);
-    if (result != size) {
+    if (cnt != 1) {
         LOG_WARN("failed to write data to file: %s", file_path);
         return -1;
     }
