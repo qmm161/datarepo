@@ -38,6 +38,7 @@ int vector_add(struct mdd_vector *dvec, void *ele)
 
     dvec->vec[dvec->size] = ele;
     dvec->size++;
+    return 0;
 }
 
 void vector_free(struct mdd_vector *dvec)
